@@ -56,6 +56,33 @@
                         "attached_to": "floor"
                     }
                 }
+            },
+            "988808cc-d9cb-4cd6-92b1-a7c37ab59a5b": {
+                "id": "988808cc-d9cb-4cd6-92b1-a7c37ab59a5b",
+                "name": "prayer room",
+                "type": "Library",
+                "floor": "f_first",
+                "cost": 0.0,
+                "area": 500.0,
+                "flooring": "Carpet",
+                "wall_color": "#f1f529",
+                "windows": 4,
+                "x": 340.0,
+                "y": -280.0,
+                "width": 400.0,
+                "height": 500.0,
+                "furniture": {
+                    "c3a1a2e1-377b-4c63-b4c0-d4faca2ec2f7": {
+                        "id": "c3a1a2e1-377b-4c63-b4c0-d4faca2ec2f7",
+                        "name": "book shelf",
+                        "cost": 1000.0,
+                        "position": "center",
+                        "model": "archive",
+                        "x": 116.667,
+                        "y": 157.333,
+                        "attached_to": "floor"
+                    }
+                }
             }
         },
         "floors": [

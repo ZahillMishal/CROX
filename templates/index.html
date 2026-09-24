@@ -188,6 +188,31 @@
         }
 
 
+        /* Staircase Connectors */
+        .blueprint-staircase {
+            position: absolute;
+            background-color: #5c3a21;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 9px, rgba(0,0,0,0.4) 10px);
+            border: 2px solid var(--accent-gold);
+            z-index: 1040;
+            pointer-events: none;
+            transition: transform 0s, opacity 0.3s;
+            width: 60px;
+            height: 60px;
+            transform: translate(-50%, -50%);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        .blueprint-wrapper.is-3d .blueprint-staircase {
+            opacity: 1;
+            transform-style: preserve-3d;
+            height: 224px;
+            transform-origin: bottom center;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 14px, rgba(0,0,0,0.5) 15px);
+        }
+        .blueprint-wrapper.is-fpv-mode {
+            background-image: none !important;
+        }
+
         /* Doorway Connectors */
         .blueprint-doorway {
             position: absolute;
@@ -465,6 +490,7 @@
         .blueprint-wrapper.is-3d .floor-layer-{{ safe_id }} { transform: translateZ({{ base_z }}px); }
         .blueprint-wrapper.is-3d .blueprint-room.floor-layer-{{ safe_id }} { transform: translateZ({{ base_z + 30 }}px); }
         .blueprint-wrapper.is-3d .blueprint-doorway.floor-layer-{{ safe_id }} { transform: translate(-50%, -50%) translateZ({{ base_z + 32 }}px); }
+        .blueprint-wrapper.is-3d .blueprint-staircase.floor-layer-{{ safe_id }} { transform: translate(-50%, -50%) translateZ({{ base_z + 30 }}px) rotateX(-63.4deg); }
         {% endfor %}
     </style>
 <script>
@@ -1446,6 +1472,7 @@ window.onerror = function(message, source, lineno, colno, error) {
                 
                 // Live doorway updates
                 updateDoorways();
+                updateStaircases();
             }
         });
 
@@ -1518,9 +1545,68 @@ window.onerror = function(message, source, lineno, colno, error) {
             document.getElementById('blueprintContainer3D').appendChild(door);
         }
 
+        function createStaircase(x, y, lowerFloorId, upperFloorId, idA, idB) {
+            const stair = document.createElement('div');
+            stair.className = `blueprint-staircase floor-layer-${lowerFloorId}`;
+            stair.setAttribute('data-current-floor', lowerFloorId);
+            stair.setAttribute('data-room-a', idA);
+            stair.setAttribute('data-room-b', idB);
+            
+            // Check active state for visibility
+            if(floors[activeFloorIndex] && (floors[activeFloorIndex].id === lowerFloorId || floors[activeFloorIndex].id === upperFloorId)) {
+                stair.classList.add('active-room');
+            }
+            
+            stair.style.left = x + 'px';
+            stair.style.top = y + 'px';
+            document.getElementById('blueprintContainer3D').appendChild(stair);
+        }
+
+        function updateStaircases() {
+            document.querySelectorAll('.blueprint-staircase').forEach(e => e.remove());
+            const rooms = Array.from(document.querySelectorAll('.blueprint-room'));
+            
+            const floorLevelMap = {};
+            floors.forEach(f => floorLevelMap[f.id] = f.level);
+
+            for (let i = 0; i < rooms.length; i++) {
+                for (let j = i + 1; j < rooms.length; j++) {
+                    const A = rooms[i];
+                    const B = rooms[j];
+                    const floorA = A.getAttribute('data-current-floor');
+                    const floorB = B.getAttribute('data-current-floor');
+                    
+                    const levelA = floorLevelMap[floorA];
+                    const levelB = floorLevelMap[floorB];
+                    if (Math.abs(levelA - levelB) !== 1) continue;
+
+                    const aL = parseFloat(A.style.left)||0, aT = parseFloat(A.style.top)||0;
+                    const aR = aL + A.offsetWidth, aB = aT + A.offsetHeight;
+                    const bL = parseFloat(B.style.left)||0, bT = parseFloat(B.style.top)||0;
+                    const bR = bL + B.offsetWidth, bB = bT + B.offsetHeight;
+
+                    const overlapX = Math.max(0, Math.min(aR, bR) - Math.max(aL, bL));
+                    const overlapY = Math.max(0, Math.min(aB, bB) - Math.max(aT, bT));
+
+                    if (overlapX >= 60 && overlapY >= 60) {
+                        const stairX = Math.max(aL, bL) + overlapX / 2;
+                        const stairY = Math.max(aT, bT) + overlapY / 2;
+                        
+                        const lowerFloorId = levelA < levelB ? floorA : floorB;
+                        const upperFloorId = levelA > levelB ? floorA : floorB;
+                        createStaircase(stairX, stairY, lowerFloorId, upperFloorId, A.getAttribute('data-room-id'), B.getAttribute('data-room-id'));
+                    }
+                }
+            }
+        }
+
         // Initialize doorways immediately
         updateDoorways();
-        window.addEventListener('DOMContentLoaded', updateDoorways);
+        updateStaircases();
+        window.addEventListener('DOMContentLoaded', () => {
+            updateDoorways();
+            updateStaircases();
+        });
 
         // The Magic Floor Gliding & Camera Panning via Scroll Wheel!
         if (blueprintWrapper && floors.length > 0) {
@@ -1734,6 +1820,7 @@ window.onerror = function(message, source, lineno, colno, error) {
                         }
                         ctxMenu.style.display = 'none';
                         updateDoorways();
+                        updateStaircases();
                     }
                 });
             }
