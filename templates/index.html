@@ -311,6 +311,7 @@
 
           /* Focus Mode & 3D Interiors */
         .blueprint-wrapper.is-focus-mode .blueprint-floor-plane,
+        .blueprint-wrapper.is-focus-mode .blueprint-staircase:not(.focused-stair),
         .blueprint-wrapper.is-focus-mode .blueprint-doorway:not(.focused-doorway),
         .blueprint-wrapper.is-focus-mode .blueprint-room:not(.focused) {
             display: none !important;
@@ -955,6 +956,17 @@ window.onerror = function(message, source, lineno, colno, error) {
                     door.classList.remove('focused-doorway');
                 }
             });
+
+            // Highlight connected staircases
+            document.querySelectorAll('.blueprint-staircase').forEach(stair => {
+                const ra = stair.getAttribute('data-room-a');
+                const rb = stair.getAttribute('data-room-b');
+                if (focusedRoomIds.has(ra) && focusedRoomIds.has(rb)) {
+                    stair.classList.add('focused-stair');
+                } else {
+                    stair.classList.remove('focused-stair');
+                }
+            });
             
             ctxMenu.style.display = 'none';
             document.getElementById('exitFocusBtn').style.display = 'block';
@@ -1012,6 +1024,7 @@ window.onerror = function(message, source, lineno, colno, error) {
             blueprintWrapper.classList.remove('is-focus-mode');
             document.querySelectorAll('.blueprint-room').forEach(r => r.classList.remove('focused'));
             document.querySelectorAll('.blueprint-doorway').forEach(d => d.classList.remove('focused-doorway'));
+            document.querySelectorAll('.blueprint-staircase').forEach(s => s.classList.remove('focused-stair'));
             this.style.display = 'none';
             updateCamera();
         });
@@ -1594,7 +1607,14 @@ window.onerror = function(message, source, lineno, colno, error) {
                         
                         const lowerFloorId = levelA < levelB ? floorA : floorB;
                         const upperFloorId = levelA > levelB ? floorA : floorB;
-                        createStaircase(stairX, stairY, lowerFloorId, upperFloorId, A.getAttribute('data-room-id'), B.getAttribute('data-room-id'));
+                        const idA = A.getAttribute('data-room-id');
+                        const idB = B.getAttribute('data-room-id');
+                        createStaircase(stairX, stairY, lowerFloorId, upperFloorId, idA, idB);
+                        
+                        if(connectedRooms[idA] && connectedRooms[idB]) {
+                            connectedRooms[idA].add(idB);
+                            connectedRooms[idB].add(idA);
+                        }
                     }
                 }
             }
