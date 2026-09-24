@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin: 0; overflow: hidden; background: #000; }
+  .wrapper {
+    width: 100vw; height: 100vh;
+    perspective: 800px;
+    position: relative;
+  }
+  .world {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform-style: preserve-3d;
+  }
+  .floor {
+    position: absolute;
+    width: 1000px; height: 1000px;
+    background: repeating-linear-gradient(45deg, #333, #333 50px, #444 50px, #444 100px);
+    transform: translate(-50%, -50%);
+  }
+  .wall {
+    position: absolute;
+    width: 200px; height: 100px;
+    background: rgba(255,0,0,0.5);
+    transform: translate3d(0, -100px, 50px) rotateX(90deg);
+  }
+</style>
+</head>
+<body>
+  <div class="wrapper" id="wrapper">
+    <div class="world" id="world">
+      <div class="floor"></div>
+      <div class="wall" style="left: 100px; top: -100px;"></div>
+      <div class="wall" style="left: -100px; top: 100px; background: blue;"></div>
+    </div>
+  </div>
+<script>
+  let x = 0, y = 0, z = 50;
+  let yaw = 0, pitch = 90; 
+  const world = document.getElementById('world');
+  
+  function update() {
+    world.style.transform = 	ranslateZ(800px) rotateX(\deg) rotateZ(\deg) translate3d(\px, \px, \px);
+  }
+  
+  update();
+  
+  document.addEventListener('keydown', e => {
+    // Math to move along the viewing direction
+    const rad = yaw * Math.PI / 180;
+    if (e.key === 'w') { x -= Math.sin(rad)*10; y -= Math.cos(rad)*10; }
+    if (e.key === 's') { x += Math.sin(rad)*10; y += Math.cos(rad)*10; }
+    if (e.key === 'a') { x -= Math.cos(rad)*10; y += Math.sin(rad)*10; }
+    if (e.key === 'd') { x += Math.cos(rad)*10; y -= Math.sin(rad)*10; }
+    
+    if (e.key === 'ArrowLeft') yaw -= 5;
+    if (e.key === 'ArrowRight') yaw += 5;
+    if (e.key === 'ArrowUp') pitch -= 5;
+    if (e.key === 'ArrowDown') pitch += 5;
+    update();
+  });
+</script>
+</body>
+</html>

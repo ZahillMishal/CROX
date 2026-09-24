@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { perspective: 800px; background: #333; color: white; padding: 100px; }
+  .floor {
+    width: 200px; height: 200px; background: #666;
+    transform-style: preserve-3d;
+    transform: rotateX(60deg) rotateZ(45deg);
+  }
+  .doorway-h {
+    position: absolute; width: 14px; height: 40px; background: #5c3a21; left: 50px; top: 100px; transform-style: preserve-3d;
+  }
+  .door-leaf-h {
+    position: absolute; width: 40px; height: 120px; background: #8b5a2b; border: 2px solid #3b2c1f;
+    left: 7px; bottom: 0;
+    transform-origin: bottom left;
+    transform: rotateX(-90deg) rotateY(-135deg);
+  }
+  
+  .doorway-v {
+    position: absolute; width: 40px; height: 14px; background: #5c3a21; left: 100px; top: 50px; transform-style: preserve-3d;
+  }
+  .door-leaf-v {
+    position: absolute; width: 40px; height: 120px; background: #8b5a2b; border: 2px solid #3b2c1f;
+    left: 0; bottom: 7px;
+    transform-origin: bottom left;
+    transform: rotateX(-90deg) rotateY(-45deg);
+  }
+</style>
+</head>
+<body>
+  <div class="floor">
+    <div class="doorway-h"><div class="door-leaf-h"></div></div>
+    <div class="doorway-v"><div class="door-leaf-v"></div></div>
+  </div>
+</body>
+</html>

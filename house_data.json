@@ -1,0 +1,105 @@
+{
+    "budget": 9999999999999.0,
+    "rooms": {
+        "8af03bca-bcc2-4aca-8a20-fd882f2cac41": {
+            "id": "8af03bca-bcc2-4aca-8a20-fd882f2cac41",
+            "name": "Studio",
+            "type": "Game Room",
+            "floor": "f_first",
+            "cost": 8000.0,
+            "area": 820.0,
+            "flooring": "Carpet",
+            "wall_color": "Acoustic Panels",
+            "windows": 0,
+            "x": 379.9,
+            "y": 347.57,
+            "width": 220,
+            "height": 180,
+            "furniture": {
+                "5ded75ae-d1a3-497d-b7b2-11fa9462aeb8": {
+                    "id": "5ded75ae-d1a3-497d-b7b2-11fa9462aeb8",
+                    "name": "Computer Table",
+                    "cost": 500.0,
+                    "position": "Left",
+                    "x": 170.241,
+                    "y": 80.4588,
+                    "attached_to": "floor"
+                }
+            }
+        },
+        "41e87d28-d6f8-4625-828b-4b311bdc10ea": {
+            "id": "41e87d28-d6f8-4625-828b-4b311bdc10ea",
+            "name": "Meditation Room",
+            "type": "Gym",
+            "floor": "f_ground",
+            "cost": 20000000.0,
+            "area": 2000.0,
+            "flooring": "marble",
+            "wall_color": "White",
+            "windows": 0,
+            "x": 224.939,
+            "y": 285.02,
+            "width": 220,
+            "height": 180,
+            "furniture": {
+                "a6d09042-1174-44b1-9e98-e58684c27ffb": {
+                    "id": "a6d09042-1174-44b1-9e98-e58684c27ffb",
+                    "name": "Cushion",
+                    "cost": 5000.0,
+                    "position": "center",
+                    "x": 135.039,
+                    "y": 99.0236,
+                    "attached_to": "floor"
+                }
+            }
+        },
+        "c42abb88-8eac-4043-b7d1-a6ed560f3795": {
+            "id": "c42abb88-8eac-4043-b7d1-a6ed560f3795",
+            "name": "Meditation side room",
+            "type": "Bedroom",
+            "floor": "f_ground",
+            "cost": 15000000.0,
+            "area": 0.0,
+            "flooring": "Standard",
+            "wall_color": "White",
+            "windows": 0,
+            "x": 80.0,
+            "y": 105.02,
+            "width": 220,
+            "height": 180,
+            "furniture": {}
+        }
+    },
+    "floors": [
+        {
+            "id": "6240a6bb-e7a7-4f90-9d44-1ded3277fe41",
+            "name": "sub basement",
+            "level": -3
+        },
+        {
+            "id": "f_ground",
+            "name": "Ground Floor",
+            "level": 0
+        },
+        {
+            "id": "f_first",
+            "name": "First Floor",
+            "level": 1
+        },
+        {
+            "id": "f_second",
+            "name": "Second Floor",
+            "level": 2
+        },
+        {
+            "id": "f_attic",
+            "name": "Attic",
+            "level": 3
+        },
+        {
+            "id": "f_rooftop",
+            "name": "Rooftop",
+            "level": 4
+        }
+    ]
+}

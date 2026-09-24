@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dream House Builder - CROX Edition</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy-dark: #1b263b;
+            --navy-light: #415a77;
+            --accent-gold: #c5a880;
+            --bg-alabaster: #f8f9fa;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-alabaster);
+            color: var(--navy-dark);
+        }
+        .brand-font { font-family: 'Cinzel', serif; }
+        .navy-text { color: var(--navy-dark); }
+        .gold-text { color: var(--accent-gold); }
+        .bg-navy { background-color: var(--navy-dark); color: white; }
+        
+        .premium-card {
+            background: white;
+            border: none;
+            border-radius: 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            padding: 30px;
+            position: relative;
+        }
+        .premium-card::before {
+            content: "";
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 1px solid rgba(197, 168, 128, 0.2);
+            pointer-events: none;
+        }
+        .btn-premium {
+            background-color: var(--accent-gold);
+            color: white;
+            border: none;
+            border-radius: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.85rem;
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-premium:hover { background-color: #b39670; color: white; transform: translateY(-2px); }
+        .form-control, .form-select {
+            border-radius: 0;
+            border: 1px solid #dee2e6;
+            padding: 10px 15px;
+        }
+        .form-control:focus, .form-select:focus {
+            box-shadow: none;
+            border-color: var(--accent-gold);
+        }
+        
+        /* Isometric 3D Blueprint Styles */
+        .blueprint-wrapper {
+            background-color: #2b2d42; 
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            padding: 60px 40px;
+            border: 10px solid #1a1b29;
+            color: #ffffff;
+            font-family: 'Inter', monospace;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
+            position: relative;
+            perspective: 2500px;
+            transition: background-color 0.8s ease;
+            min-height: 800px;
+        }
+        
+        .blueprint-container-3d-root {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 700px;
+            transition: transform 1.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-style: preserve-3d;
+        }
+
+        /* 3D Vertical Stacking Coordinator */
+        .blueprint-floor-plane {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 2px dashed rgba(197, 168, 128, 0.15);
+            background-color: rgba(255,255,255,0.01);
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: all 1.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            pointer-events: none;
+        }
+
+        /* Active floor is brighter, others are dim */
+        .blueprint-wrapper.is-3d .blueprint-floor-plane { opacity: 0.1; }
+        .blueprint-wrapper.is-3d .blueprint-floor-plane.active-plane { opacity: 1; border-color: rgba(197, 168, 128, 0.6); }
+
+        .blueprint-room {
+            position: absolute;
+            padding: 15px;
+            /* min-height removed */
+            /* width removed */
+            transition: transform 1.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-style: preserve-3d;
+            /* pointer-events removed for 2D dragging */
+            user-select: none;
+            box-sizing: border-box !important;
+        }
+        /* Floor Textures */
+        .flooring-standard { background-color: rgba(27, 38, 59, 0.4); }
+        .flooring-wood { 
+            background-color: #8b5a2b;
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0,0,0,0.2) 20px);
+        }
+        .flooring-tile {
+            background-color: #e0e0e0;
+            background-image: 
+                linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc),
+                linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .flooring-carpet {
+            background-color: #5c6c7d;
+            background-image: radial-gradient(rgba(0,0,0,0.1) 15%, transparent 16%), radial-gradient(rgba(0,0,0,0.1) 15%, transparent 16%);
+            background-size: 8px 8px;
+            background-position: 0 0, 4px 4px;
+        }
+
+        /* Real HTML child for the floor prevents Chrome from flattening the hit-test area */
+        .room-floor-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 2px solid var(--accent-gold);
+            background-color: rgba(27, 38, 59, 0.85);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: box-shadow 1.2s ease, background-color 0.3s;
+            pointer-events: auto;
+            cursor: grab;
+            transform: translateZ(-5px);
+        }
+        .blueprint-room:active
+        .room-floor-bg {
+            background-color: rgba(43, 60, 90, 0.95);
+            cursor: grabbing;
+        }
+        .blueprint-room.focused {
+            z-index: 2000 !important;
+        }
+        .blueprint-room.focused
+        .room-floor-bg {
+            box-shadow: 0 0 100px rgba(197, 168, 128, 0.4) !important;
+            cursor: default !important;
+        }
+        
+
+        
+        .blueprint-wrapper.is-3d .blueprint-room {
+            box-shadow: -25px 25px 40px rgba(0,0,0,0.8);
+            background-color: rgba(27, 38, 59, 0.4);
+            opacity: 0.5;
+            pointer-events: none !important; /* Let clicks pass through ghost rooms */
+        }
+        .blueprint-wrapper.is-3d .blueprint-room.active-room {
+            background-color: transparent;
+            opacity: 1;
+            /* Do NOT set pointer-events: auto on the room! The children handle it! */
+        }
+        .blueprint-wrapper.is-3d .blueprint-room.active-room
+        .room-floor-bg {
+            pointer-events: auto; /* Only active floor background is clickable */
+        }
+
+
+        /* Doorway Connectors */
+        .blueprint-doorway {
+            position: absolute;
+            background-color: rgba(27, 38, 59, 0.95);
+            z-index: 1050;
+            pointer-events: none;
+            transition: transform 0s, opacity 0.3s;
+        }
+        .blueprint-wrapper.is-animating .blueprint-doorway {
+            transition: transform 1.2s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s;
+        }
+        .blueprint-doorway.horizontal {
+            width: 14px;
+            height: 40px;
+            transform: translate(-50%, -50%);
+            border-top: 2px solid var(--accent-gold);
+            border-bottom: 2px solid var(--accent-gold);
+        }
+        .blueprint-doorway.vertical {
+            width: 40px;
+            height: 14px;
+            transform: translate(-50%, -50%);
+            border-left: 2px solid var(--accent-gold);
+            border-right: 2px solid var(--accent-gold);
+        }
+        .blueprint-wrapper.is-3d .blueprint-doorway {
+            opacity: 1;
+            background-color: #5c3a21; /* Wood sill */
+            transform-style: preserve-3d;
+        }
+        .blueprint-wrapper.is-3d .blueprint-doorway.active-room {
+            opacity: 1;
+        }
+
+        /* 3D Door Leaf */
+        .blueprint-doorway-leaf {
+            display: none;
+            position: absolute;
+            background: #8b5a2b; /* Wood */
+            border: 2px solid #3b2c1f;
+        }
+        .blueprint-wrapper.is-fpv-mode .blueprint-doorway-leaf {
+            display: block;
+        }
+        .blueprint-doorway-leaf::after {
+            content: '';
+            position: absolute;
+            width: 6px; height: 15px;
+            background: gold;
+            top: 50%;
+            border-radius: 2px;
+        }
+
+        .blueprint-doorway.horizontal .blueprint-doorway-leaf {
+            width: 40px; height: 120px;
+            left: 7px; bottom: 0;
+            transform-origin: bottom left;
+            transform: rotateX(-90deg) rotateY(-135deg);
+        }
+        .blueprint-doorway.horizontal .blueprint-doorway-leaf::after {
+            right: 4px;
+        }
+
+        .blueprint-doorway.vertical .blueprint-doorway-leaf {
+            width: 40px; height: 120px;
+            left: 0; bottom: 7px;
+            transform-origin: bottom left;
+            transform: rotateX(-90deg) rotateY(-45deg);
+        }
+        .blueprint-doorway.vertical .blueprint-doorway-leaf::after {
+            right: 4px;
+        }
+
+        
+          .room-resizer {
+              position: absolute;
+              bottom: 0;
+              right: 0;
+              width: 20px;
+              height: 20px;
+              cursor: nwse-resize;
+              z-index: 1000;
+              background: linear-gradient(135deg, transparent 50%, var(--accent-gold) 50%);
+              pointer-events: auto !important;
+              opacity: 0.2;
+              transition: opacity 0.3s;
+          }
+          .blueprint-room:hover .room-resizer {
+              opacity: 1;
+          }
+          
+          /* Hide room resizer in 3D to prevent interference with furniture */
+          .blueprint-wrapper.is-3d .room-resizer {
+              display: none !important;
+          }
+
+          /* Focus Mode & 3D Interiors */
+        .blueprint-wrapper.is-focus-mode .blueprint-floor-plane,
+        .blueprint-wrapper.is-focus-mode .blueprint-doorway:not(.focused-doorway),
+        .blueprint-wrapper.is-focus-mode .blueprint-room:not(.focused) {
+            display: none !important;
+        }
+        .blueprint-wrapper.is-focus-mode .blueprint-item {
+            display: none; /* Hide text list in focus mode */
+        }
+        
+        .room-wall {
+            position: absolute;
+            background-color: rgba(27, 38, 59, 0.98);
+            border: 2px solid var(--accent-gold);
+            pointer-events: none !important;
+            display: none;
+            top: 0; left: 0;
+            transform-origin: 50% 50%;
+        }
+        .blueprint-wrapper.is-3d .blueprint-room.focused .room-wall {
+            display: block;
+        }
+
+        .furniture-item {
+            position: absolute;
+            width: 60px; height: 60px;
+            background-color: rgba(197, 168, 128, 0.9);
+            color: #1b263b;
+            font-size: 0.55rem;
+            font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center;
+            border: 2px solid #1b263b;
+            border-radius: 6px;
+            cursor: grab !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            box-shadow: -5px 5px 15px rgba(0,0,0,0.6);
+            transition: box-shadow 0.3s, border-color 0.3s, background-color 0.3s;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            pointer-events: auto !important;
+        }
+        .furniture-item:hover {
+            box-shadow: 0 0 25px var(--accent-gold) !important;
+            border-color: #fff !important;
+            background-color: rgba(220, 190, 140, 1) !important;
+            z-index: 200 !important;
+        }
+        
+        .blueprint-wrapper.is-focus-mode .furniture-item {
+            display: flex;
+        }
+
+        #exitFocusBtn {
+            position: absolute;
+            top: 20px; right: 20px;
+            z-index: 3000;
+            display: none;
+            letter-spacing: 2px;
+        }
+
+        .fpv-instructions {
+            display: none;
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 5px;
+            border: 1px solid var(--accent-gold);
+            z-index: 3000;
+            pointer-events: none;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .blueprint-wrapper.is-fpv-mode .fpv-instructions {
+            display: block;
+        }
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            color: var(--accent-gold);
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(197, 168, 128, 0.3);
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            text-align: center;
+            pointer-events: none;
+        }
+        .blueprint-item {
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            color: #d1d5db;
+            letter-spacing: 0.5px;
+            transition: transform 1.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            pointer-events: none;
+        }
+        .blueprint-wrapper.is-3d .blueprint-item {
+            transform: translateZ(40px);
+            text-shadow: -5px 5px 10px rgba(0,0,0,0.8);
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .blueprint-specs {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-top: 1px dotted rgba(255,255,255,0.1);
+            padding-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .blueprint-floor-indicator {
+            position: absolute;
+            top: 5px; right: 5px;
+            background: var(--accent-gold);
+            color: white;
+            font-size: 0.55rem;
+            padding: 2px 5px;
+            border-radius: 2px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .blueprint-floor-title {
+            position: absolute;
+            top: -50px;
+            left: 20px;
+            font-family: 'Cinzel', serif;
+            color: var(--accent-gold);
+            font-size: 2rem;
+            opacity: 0.8;
+            letter-spacing: 3px;
+            border-bottom: 1px dashed rgba(255,255,255,0.2);
+            padding-bottom: 10px;
+            transform: translateZ(20px) translateY(-20px);
+            text-shadow: -5px 5px 10px rgba(0,0,0,0.8);
+        }
+
+        /* 3D Toggle Switch */
+        .toggle-3d-btn {
+            background: var(--accent-gold);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 4px;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(197, 168, 128, 0.4);
+        }
+        .toggle-3d-btn:hover {
+            background: #b39670;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(197, 168, 128, 0.6);
+        }
+    </style>
+    
+    <!-- Dynamic Custom Floor Z-Index Styles -->
+    <style>
+        {% for floor in house.floors %}
+        {% set safe_id = floor.id %}
+        {% set base_z = floor.level * 200 + 1000 %}
+        .blueprint-wrapper.is-3d .floor-layer-{{ safe_id }} { transform: translateZ({{ base_z }}px); }
+        .blueprint-wrapper.is-3d .blueprint-room.floor-layer-{{ safe_id }} { transform: translateZ({{ base_z + 30 }}px); }
+        .blueprint-wrapper.is-3d .blueprint-doorway.floor-layer-{{ safe_id }} { transform: translate(-50%, -50%) translateZ({{ base_z + 32 }}px); }
+        {% endfor %}
+    </style>
+<script>
+window.onerror = function(message, source, lineno, colno, error) {
+    const msg = message + " at line " + lineno + ":" + colno;
+    fetch('/log_error', {method: 'POST', body: msg});
+    return false;
+};
+</script>
+</head>
+<body class="bg-dark">
+
+    <div class="container py-5">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <div class="d-flex align-items-center mb-3 justify-content-center"><a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-sm me-4" style="border-color: #c5a880; color: #c5a880;">&larr; Dashboard</a><h1 class="brand-font display-4 gold-text mb-0" style="letter-spacing: 2px;">CROX</h1></div>
+            <div class="d-flex justify-content-center align-items-center mb-4">
+                <span class="text-white-50 me-2 small">GRID UNIT:</span>
+                <form action="{{ url_for('set_unit', project_id=project_id) }}" method="POST" id="unitForm">
+                    <select name="unit" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 120px;" onchange="document.getElementById('unitForm').submit()">
+                        <option value="ft" {% if house.unit == 'ft' %}selected{% endif %}>Feet (ft)</option>
+                        <option value="m" {% if house.unit == 'm' %}selected{% endif %}>Meters (m)</option>
+                    </select>
+                </form>
+            </div>
+            <p class="lead text-light opacity-75">Design your bespoke estate. Commission rooms, procure furnishings, and project capital.</p>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="row g-4 mb-5">
+            <!-- Commission Room -->
+            <div class="col-md-6">
+                <div class="premium-card h-100">
+                    <h4 class="brand-font navy-text mb-4"><i class="bi bi-bricks me-2"></i>Commission a Space</h4>
+                    <form action="{{ url_for('add_room', project_id=project_id) }}" method="POST">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label gold-text small">SPACE DESIGNATION</label>
+                                <input type="text" name="name" class="form-control" placeholder="e.g. Master Suite" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label gold-text small">PRIMARY FUNCTION</label>
+                                <select name="type" class="form-select" required>
+                                    <option value="Bedroom">Bedroom</option>
+                                    <option value="Living Room">Living Room</option>
+                                    <option value="Kitchen">Kitchen</option>
+                                    <option value="Bathroom">Bathroom</option>
+                                    <option value="Gym">Gymnasium</option>
+                                    <option value="Game Room">Game Room</option>
+                                    <option value="Office">Executive Office</option>
+                                    <option value="Library">Library</option>
+                                    <option value="Theater">Home Theater</option>
+                                    <option value="Garage">Motor Court</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label gold-text small">LEVEL / FLOOR</label>
+                                <select name="floor" class="form-select">
+                                    {% for floor in house.floors %}
+                                    <option value="{{ floor.id }}" {% if floor.level == 0 %}selected{% endif %}>{{ floor.name }} (Lvl {{ floor.level }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label gold-text small">CAPITAL REQUIREMENT ($)</label>
+                                <input type="number" name="cost" class="form-control" placeholder="0.00" step="0.01">
+                            </div>
+                            <div class="col-md-3">
+                                  <label class="form-label gold-text small">WIDTH ({{ house.unit }})</label>
+                                  <input type="number" name="width" class="form-control" placeholder="11" step="0.1" value="11">
+                              </div>
+                              <div class="col-md-3">
+                                  <label class="form-label gold-text small">LENGTH ({{ house.unit }})</label>
+                                  <input type="number" name="length" class="form-control" placeholder="9" step="0.1" value="9">
+                              </div>
+                            <div class="col-md-4">
+                                <label class="form-label gold-text small">FLOORING</label>
+                                <select name="flooring" class="form-select">
+                                    <option value="Standard">Standard</option>
+                                    <option value="Wood">Hardwood</option>
+                                    <option value="Tile">Tile</option>
+                                    <option value="Carpet">Carpet</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label gold-text small">WALL FINISH</label>
+                                <input type="color" name="wall_color" class="form-control form-control-color w-100" value="#ffffff" title="Choose wall color">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label gold-text small">WINDOWS</label>
+                                <input type="number" name="windows" class="form-control" placeholder="0">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-premium w-100 mt-4">COMMISSION SPACE</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Capital Projection & Level Management -->
+            <div class="col-md-6 d-flex flex-column gap-4">
+                <div class="premium-card flex-grow-1">
+                    <h4 class="brand-font navy-text mb-4"><i class="bi bi-bank me-2"></i>Capital Projection</h4>
+                    <div class="row text-center g-3 align-items-center">
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-light border">
+                                <small class="gold-text text-uppercase d-block mb-1 fw-bold">Allocated Budget</small>
+                                <h4 class="navy-text mb-0 d-flex align-items-center">
+                                    ${{ "%.2f"|format(house.budget) }}
+                                    <button class="btn btn-sm btn-link p-0 ms-2" style="color: #c5a880;" onclick="editBudget({{ house.budget }})" title="Edit Budget">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                </h4>
+                                <form id="editBudgetForm" action="{{ url_for('set_budget', project_id=project_id) }}" method="POST" style="display: none;">
+                                    <input type="number" step="0.01" name="budget" id="editBudgetInput">
+                                </form>
+                                <script>
+                                function editBudget(currentBudget) {
+                                    const newBudget = prompt("Enter new allocated budget ($):", currentBudget);
+                                    if (newBudget !== null && newBudget.trim() !== "" && !isNaN(newBudget)) {
+                                        document.getElementById('editBudgetInput').value = newBudget;
+                                        document.getElementById('editBudgetForm').submit();
+                                    }
+                                }
+                                </script>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-light border">
+                                <small class="gold-text text-uppercase d-block mb-1 fw-bold">Total Expenditure</small>
+                                <h4 class="navy-text mb-0">${{ "%.2f"|format(house.get_total_spending()) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="p-3 rounded text-white shadow" style="background: var(--navy-dark); border: 1px solid var(--accent-gold);">
+                                <small class="gold-text text-uppercase d-block mb-1 fw-bold">Remaining Capital</small>
+                                <h3 class="mb-0 brand-font" style="letter-spacing: 2px;">${{ "%.2f"|format(house.get_remaining_money()) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Floors Manager -->
+                <div class="premium-card">
+                    <h5 class="brand-font navy-text mb-3"><i class="bi bi-layers me-2"></i>Architectural Levels</h5>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        {% for floor in house.floors %}
+                        <div class="badge bg-navy p-2 px-3 d-flex align-items-center" style="font-size: 0.8rem;">
+                            {{ floor.name }} <span class="gold-text ms-1 opacity-75">(Lvl {{ floor.level }})</span>
+                            <form action="{{ url_for('delete_floor', project_id=project_id, floor_id=floor.id) }}" method="POST" class="m-0 ms-2">
+                                <button type="submit" class="btn btn-link p-0 text-white opacity-75"><i class="bi bi-x-circle"></i></button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <form action="{{ url_for('add_floor', project_id=project_id) }}" method="POST" class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. Sub-Basement" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" name="level" class="form-control form-control-sm" placeholder="Level (-2, 5)" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-navy btn-sm w-100 fw-bold">+</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% if house.rooms %}
+            <h4 class="brand-font navy-text mb-4 mt-5">II. Spatial Inventory</h4>
+            
+            <div class="accordion" id="roomsAccordion">
+                {% for floor in house.floors %}
+                    {% set floor_rooms = house.rooms.values() | selectattr('floor', 'equalto', floor.id) | list %}
+                    {% if floor_rooms|length > 0 %}
+                    <div class="accordion-item mb-4 premium-card p-0" style="">
+                        <h2 class="accordion-header" id="heading{{ loop.index }}">
+                            <button class="accordion-button brand-font" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" style="background: var(--navy-dark); color: white; border-radius: 0;">
+                                <span class="gold-text me-3">LEVEL:</span> {{ floor.name|upper }} ({{ floor.level }})
+                            </button>
+                        </h2>
+                        <div id="collapse{{ loop.index }}" class="accordion-collapse collapse show" data-bs-parent="#roomsAccordion">
+                            <div class="accordion-body p-4" style="background: rgba(255,255,255,0.02);">
+                                <div class="row g-4">
+                                {% for room in floor_rooms %}
+                                    <div class="col-md-6">
+                                        <div class="premium-card h-100" style="box-shadow: none; border-color: rgba(197, 168, 128, 0.2);">
+                                            <div class="d-flex justify-content-between align-items-start mb-3 border-bottom pb-3">
+                                                <div>
+                                                    <h5 class="brand-font navy-text mb-1">{{ room.name }}</h5>
+                                                    <span class="badge bg-navy text-uppercase" style="letter-spacing: 1px;">{{ room.type }}</span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <h6 class="navy-text mb-0 fw-bold">${{ "%.2f"|format(room.cost) }}</h6>
+                                                    <small class="text-muted">{{ room.area }} sq.{{ house.unit }}</small>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row g-2 mb-4 text-center small text-muted">
+                                                <div class="col-4 border-end">
+                                                    <i class="bi bi-layers d-block mb-1 gold-text"></i> {{ room.flooring }}
+                                                </div>
+                                                <div class="col-4 border-end">
+                                                    <i class="bi bi-paint-bucket d-block mb-1 gold-text"></i> {{ room.wall_color }}
+                                                </div>
+                                                <div class="col-4">
+                                                    <i class="bi bi-window d-block mb-1 gold-text"></i> {{ room.windows }} Win
+                                                </div>
+                                            </div>
+
+                                            <div class="bg-light p-3 rounded mb-3">
+                                                <h6 class="gold-text text-uppercase small fw-bold mb-3">Procure Furnishings</h6>
+                                                <form action="{{ url_for('add_furniture', project_id=project_id) }}" method="POST" class="row g-2">
+                                                    <input type="hidden" name="room_id" value="{{ room.id }}">
+                                                    <div class="col-12">
+                                                        <input type="text" name="name" class="form-control form-control-sm" placeholder="Item Name (e.g. Sofa)" required>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <input type="number" name="cost" class="form-control form-control-sm" placeholder="Cost ($)" step="0.01">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <input type="text" name="position" class="form-control form-control-sm" placeholder="Position (e.g. Center)">
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <select name="model" class="form-select form-select-sm">
+                                                            <option value="box">📦 Generic Box</option>
+                                                            <option value="tv">📺 Television</option>
+                                                            <option value="lamp">💡 Lighting</option>
+                                                            <option value="archive">🗄️ Cabinet/Storage</option>
+                                                            <option value="square">🔲 Table/Desk</option>
+                                                            <option value="person">🪑 Seating</option>
+                                                            <option value="moon">🛏️ Bed</option>
+                                                            <option value="droplet">💧 Plumbing/Sink</option>
+                                                            <option value="fire">🔥 Appliance/Stove</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-12 mt-2">
+                                                        <button type="submit" class="btn btn-sm btn-outline-dark w-100">ADD ITEM</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+
+                                            {% if room.furniture %}
+                                                <h6 class="gold-text text-uppercase small fw-bold">Inventory</h6>
+                                                <ul class="list-group list-group-flush mb-3">
+                                                {% for furn_id, furn in room.furniture.items() %}
+                                                    <li class="list-group-item bg-transparent px-0 d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <i class="bi bi-{{ furn.get('model', 'box') }} gold-text me-2"></i>{{ furn.name }}
+                                                            {% if furn.position %}
+                                                            <small class="text-muted ms-2">({{ furn.position }})</small>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="navy-text fw-bold me-3">${{ "%.2f"|format(furn.cost) }}</span>
+                                                            <form action="{{ url_for('delete_furniture', project_id=project_id, room_id=room.id, furn_id=furn_id) }}" method="POST" class="d-inline">
+                                                                <button type="submit" class="btn btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                                                            </form>
+                                                        </div>
+                                                    </li>
+                                                {% endfor %}
+                                                </ul>
+                                            {% endif %}
+
+                                            <form action="{{ url_for('delete_room', project_id=project_id, room_id=room.id) }}" method="POST" class="mt-auto pt-3 border-top text-center">
+                                                <button type="submit" class="btn btn-link text-danger text-uppercase small text-decoration-none" style="letter-spacing: 1px;">
+                                                    <i class="bi bi-x-circle me-1"></i> Demolish Space
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Premium Architectural Blueprint -->
+            <div class="d-flex justify-content-between align-items-end mt-5 mb-4">
+                <h4 class="brand-font navy-text mb-0">III. Master Schematic</h4>
+                <div class="text-end">
+                    <small class="text-muted d-block mb-2">💡 Drag to move • Scroll anywhere to pan camera/change floors</small>
+                    <button class="toggle-3d-btn" id="toggle3DBtn"><i class="bi bi-box"></i> TOGGLE 3D VIEW</button>
+                </div>
+            </div>
+            
+            <div class="blueprint-wrapper mb-5" id="blueprintWrapper">
+                <button id="exitFocusBtn" class="btn btn-outline-light bg-dark px-4 py-2"><i class="bi bi-arrow-left me-2"></i> EXIT FOCUS MODE</button>
+                <div class="fpv-instructions"><i class="bi bi-mouse me-2"></i>Look Around &nbsp;&nbsp;|&nbsp;&nbsp; <span class="badge bg-secondary">W A S D</span> Move &nbsp;&nbsp;|&nbsp;&nbsp; <span class="badge bg-secondary">Space / Shift</span> Up/Down &nbsp;&nbsp;|&nbsp;&nbsp; <span class="badge bg-secondary">Esc</span> Exit</div>
+                <div class="blueprint-container-3d-root" id="blueprintContainer3D">
+                    <div class="text-center mb-5 opacity-75" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; position:absolute; top: -100px; left:0; right:0; transform: translateZ(50px);">
+                        <div class="brand-font gold-text" style="font-size: 1.5rem; letter-spacing: 5px;">CROX BLUEPRINT</div>
+                        <small style="letter-spacing: 2px;">SCALE: 1/4" = 1'-0" | PROJECT: BESPOKE ESTATE | DRAWN: AUTOMATED</small>
+                    </div>
+                    
+                    <!-- Visual Floor Boundaries -->
+                    {% for floor in house.floors %}
+                        <div class="blueprint-floor-plane floor-layer-{{ floor.id }}" data-floor-id="{{ floor.id }}">
+                            <div class="blueprint-floor-title">{{ floor.name|upper }}</div>
+                        </div>
+                    {% endfor %}
+                    
+                    <!-- Rooms (All flat in DOM, styled via classes) -->
+                    {% for room_id, room in house.rooms.items() %}
+                        <!-- Fallback to Ground Floor if ID doesn't exist anymore -->
+                        {% set floor_id = room.get('floor', 'f_ground') %}
+                        
+                        <!-- Retrieve Display Name -->
+                        {% set ns = namespace(floor_name="Unknown") %}
+                        {% for f in house.floors %}
+                            {% if f.id == floor_id %}
+                                {% set ns.floor_name = f.name %}
+                            {% endif %}
+                        {% endfor %}
+                        {% set room_floor_name = ns.floor_name %}
+
+                        <div class="blueprint-room floor-layer-{{ floor_id }}" 
+                             data-room-id="{{ room.id }}" 
+                             data-current-floor="{{ floor_id }}"
+                             style="left: {{ room.get('x', 20) }}px; top: {{ room.get('y', 20) }}px; width: {{ room.get('width', 220) }}px; height: {{ room.get('height', 180) }}px;">
+                            
+                            {% set W = room.get('width', 220) %}
+                            {% set H = room.get('height', 180) %}
+                            
+                            <!-- True 3D sibling background plane to prevent hit-test swallowing -->
+                            <div class="room-floor-bg flooring-{{ room.get('flooring', 'Standard')|lower }}"></div>
+
+                            <!-- 3D Focus Mode Walls (Mathematically Perfect Absolute Positioning) -->
+                            <div class="room-wall" style="width: {{ W }}px; height: 160px; transform: translate3d(0, -80px, 80px) rotateX(90deg); background-color: {{ room.get('wall_color', '#1b263b') }}; opacity: 0.95;"></div>
+                            <div class="room-wall" style="width: {{ W }}px; height: 160px; transform: translate3d(0, {{ H - 80 }}px, 80px) rotateX(-90deg) rotateZ(180deg); background-color: {{ room.get('wall_color', '#1b263b') }}; opacity: 0.4;"></div>
+                            <div class="room-wall" style="width: {{ H }}px; height: 160px; transform: translate3d({{ W - H/2 }}px, {{ H/2 - 80 }}px, 80px) rotateY(90deg) rotateZ(-90deg); background-color: {{ room.get('wall_color', '#1b263b') }}; opacity: 0.4;"></div>
+                            <div class="room-wall" style="width: {{ H }}px; height: 160px; transform: translate3d({{ -H/2 }}px, {{ H/2 - 80 }}px, 80px) rotateY(-90deg) rotateZ(90deg); background-color: {{ room.get('wall_color', '#1b263b') }}; opacity: 0.95;"></div>
+                            
+                            <div class="blueprint-floor-indicator">{{ room_floor_name }}</div>
+                            <div class="blueprint-title">{{ room.name }}</div>
+                              <div class="room-resizer"></div>
+                            <div class="text-center mb-3 gold-text opacity-75" style="font-size: 0.65rem; letter-spacing: 2px;">[{{ room.type|upper }}]</div>
+                            
+                            <div class="mb-4">
+                                {% for furn_id, furn in room.furniture.items() %}
+                                <!-- Text List Item -->
+                                <div class="blueprint-item">
+                                    <span><span style="color:var(--accent-gold); margin-right:5px;">+</span>{{ furn.name|upper }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Render Furniture Visually as direct child of room -->
+                            {% for furn_id, furn in room.furniture.items() %}
+                                <div class="furniture-item {{ furn.get('attached_to', 'floor') }} d-flex flex-column align-items-center justify-content-center text-center" 
+                                     draggable="false"
+                                     data-furn-id="{{ furn.id }}" 
+                                     data-room-id="{{ room.id }}"
+                                     data-attached="{{ furn.get('attached_to', 'floor') }}"
+                                     style="left: {{ furn.get('x', 20) }}px; top: {{ furn.get('y', 20) }}px;">
+                                     <i class="bi bi-{{ furn.get('model', 'box') }} fs-4 mb-1"></i>
+                                     <span style="font-size: 0.45rem; line-height: 1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ furn.name|upper }}</span>
+                                </div>
+                            {% endfor %}
+
+                            <div class="blueprint-specs">
+                                <span>{{ room.get('area', 0) }} sq.{{ house.unit }}</span>
+                                <span>W: {{ room.get('windows', 0) }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        {% else %}
+            <div class="text-center py-5 my-5 premium-card">
+                <i class="bi bi-compass text-muted mb-3 d-block" style="font-size: 3rem; opacity: 0.3;"></i>
+                <h4 class="brand-font navy-text">The Canvas is Blank</h4>
+                <p class="text-muted" style="letter-spacing: 0.5px;">Begin designing your estate by commissioning a new space above.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Context Menu -->
+    <ul id="roomContextMenu" class="dropdown-menu shadow" style="position: absolute; display: none; z-index: 4000; font-size: 0.85rem; border-radius: 0; border: 1px solid var(--accent-gold);">
+        <li><a class="dropdown-item fw-bold" href="#" id="ctxFocus"><i class="bi bi-search me-2 gold-text"></i>Single Focus Mode</a></li>
+        <li><a class="dropdown-item fw-bold" href="#" id="ctxFocusConnected"><i class="bi bi-diagram-3 me-2 gold-text"></i>Connected Focus Mode</a></li>
+        <li><a class="dropdown-item fw-bold" href="#" id="ctxFirstPerson"><i class="bi bi-person-video me-2 gold-text"></i>First Person View</a></li>
+        <li><a class="dropdown-item fw-bold" href="#" id="ctxDuplicate"><i class="bi bi-files me-2 gold-text"></i>Duplicate Space</a></li>
+        <li><a class="dropdown-item fw-bold" href="#" id="ctxRotate"><i class="bi bi-arrow-clockwise me-2 gold-text"></i>Rotate 90°</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item fw-bold text-danger" href="#" id="ctxDelete"><i class="bi bi-trash me-2"></i>Demolish</a></li>
+    </ul>
+
+    <!-- JavaScript for 3D Toggle, Room Dragging, Camera Panning, and Floor Gliding -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const toggleBtn = document.getElementById('toggle3DBtn');
+        const blueprintWrapper = document.getElementById('blueprintWrapper');
+        const container3D = document.getElementById('blueprintContainer3D');
+        
+        // Dynamic Floor tracking logic powered by backend data
+        const floors = [
+            {% for floor in house.floors %}
+            { id: "{{ floor.id }}", name: "{{ floor.name }}", level: {{ floor.level }} },
+            {% endfor %}
+        ];
+        
+        // Default to Level 0 (Ground Floor) or the lowest available
+        let activeFloorIndex = Math.max(0, floors.findIndex(f => f.level === 0));
+
+        let isFocusMode = false;
+        let focusedRoomIds = new Set();
+        let isConnectedFocusMode = false;
+
+        function getConnectedComponent(startRoomId) {
+            let component = new Set([startRoomId]);
+            let queue = [startRoomId];
+            while (queue.length > 0) {
+                let curr = queue.shift();
+                if(connectedRooms[curr]) {
+                    connectedRooms[curr].forEach(neighbor => {
+                        if (!component.has(neighbor)) {
+                            component.add(neighbor);
+                            queue.push(neighbor);
+                        }
+                    });
+                }
+            }
+            return component;
+        }
+
+        function enterFocusMode(roomId, connected) {
+            if(!roomId) return;
+            isFocusMode = true;
+            isConnectedFocusMode = connected;
+            
+            if (connected) {
+                focusedRoomIds = getConnectedComponent(roomId);
+            } else {
+                focusedRoomIds = new Set([roomId]);
+            }
+            
+            orbitRotZ = -45;
+            orbitRotX = 60;
+            blueprintWrapper.classList.add('is-focus-mode');
+            
+            document.querySelectorAll('.blueprint-room').forEach(r => {
+                if (focusedRoomIds.has(r.getAttribute('data-room-id'))) {
+                    r.classList.add('focused');
+                } else {
+                    r.classList.remove('focused');
+                }
+            });
+            
+            // Highlight connected doorways
+            document.querySelectorAll('.blueprint-doorway').forEach(door => {
+                const ra = door.getAttribute('data-room-a');
+                const rb = door.getAttribute('data-room-b');
+                if (focusedRoomIds.has(ra) && focusedRoomIds.has(rb)) {
+                    door.classList.add('focused-doorway');
+                } else {
+                    door.classList.remove('focused-doorway');
+                }
+            });
+            
+            ctxMenu.style.display = 'none';
+            document.getElementById('exitFocusBtn').style.display = 'block';
+            updateCamera();
+        }
+
+        document.getElementById('ctxFocus').addEventListener('click', function(e) {
+            e.preventDefault();
+            enterFocusMode(contextRoomId, false);
+        });
+        
+        document.getElementById('ctxFocusConnected').addEventListener('click', function(e) {
+            e.preventDefault();
+            enterFocusMode(contextRoomId, true);
+        });
+
+        document.getElementById('ctxFirstPerson').addEventListener('click', function(e) {
+            e.preventDefault();
+            const room = document.querySelector(`.blueprint-room[data-room-id="${contextRoomId}"]`);
+            if (room) {
+                fpvX = parseFloat(room.style.left) + room.offsetWidth/2;
+                fpvY = parseFloat(room.style.top) + room.offsetHeight/2;
+                fpvZ = 50; // Eye level
+                fpvPitch = 90; // Look straight ahead
+                fpvYaw = 0;
+                
+                isFirstPersonMode = true;
+                const floorId = room.getAttribute('data-current-floor');
+                const fIdx = floors.findIndex(f => f.id === floorId);
+                if (fIdx !== -1) activeFloorIndex = fIdx;
+                
+                blueprintWrapper.classList.add('is-3d');
+                blueprintWrapper.classList.add('is-fpv-mode');
+                
+                // Attempt pointer lock
+                blueprintWrapper.requestPointerLock();
+                ctxMenu.style.display = 'none';
+                
+                document.getElementById('exitFocusBtn').style.display = 'block';
+                updateCamera();
+            }
+        });
+
+        document.getElementById('exitFocusBtn').addEventListener('click', function(e) {
+            isFocusMode = false;
+            focusedRoomIds.clear();
+            isConnectedFocusMode = false;
+            if (isFirstPersonMode) {
+                isFirstPersonMode = false;
+                blueprintWrapper.classList.remove('is-fpv-mode');
+                document.exitPointerLock();
+            }
+            orbitRotZ = -45;
+            orbitRotX = 60;
+            blueprintWrapper.classList.remove('is-focus-mode');
+            document.querySelectorAll('.blueprint-room').forEach(r => r.classList.remove('focused'));
+            document.querySelectorAll('.blueprint-doorway').forEach(d => d.classList.remove('focused-doorway'));
+            this.style.display = 'none';
+            updateCamera();
+        });
+
+        let orbitRotZ = -45;
+        let orbitRotX = 60;
+        let isOrbiting = false;
+        let orbitStartX = 0;
+        let orbitStartY = 0;
+        let initialOrbitZ = -45;
+        let initialOrbitX = 60;
+
+        let isFirstPersonMode = false;
+        let fpvX = 0, fpvY = 0, fpvZ = 50;
+        let fpvYaw = 0, fpvPitch = 90;
+        let fpvVelX = 0, fpvVelY = 0, fpvVelZ = 0;
+        const keys = {};
+
+        document.addEventListener('keydown', e => { if (isFirstPersonMode) keys[e.key.toLowerCase()] = true; });
+        document.addEventListener('keyup', e => { if (isFirstPersonMode) keys[e.key.toLowerCase()] = false; });
+
+        document.addEventListener('mousemove', e => {
+            if (isFirstPersonMode && document.pointerLockElement === blueprintWrapper) {
+                fpvYaw -= e.movementX * 0.2;
+                fpvPitch -= e.movementY * 0.2; // Inverted for natural FPS look
+                fpvPitch = Math.max(10, Math.min(170, fpvPitch)); 
+                updateCamera();
+            }
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement !== blueprintWrapper) {
+                if (isFirstPersonMode) {
+                    document.getElementById('exitFocusBtn').click();
+                }
+            }
+        });
+
+        function fpvLoop() {
+            if (isFirstPersonMode) {
+                const rad = fpvYaw * Math.PI / 180;
+                let ax = 0, ay = 0, az = 0;
+                
+                if (keys['w']) { ax -= Math.sin(rad); ay -= Math.cos(rad); }
+                if (keys['s']) { ax += Math.sin(rad); ay += Math.cos(rad); }
+                if (keys['a']) { ax -= Math.cos(rad); ay += Math.sin(rad); }
+                if (keys['d']) { ax += Math.cos(rad); ay -= Math.sin(rad); }
+                if (keys[' ']) { az += 1; }
+                if (keys['shift']) { az -= 1; }
+                
+                // Normalize and apply acceleration
+                const ACCEL = 0.6; // Reduced for slightly slower speed
+                const mag = Math.sqrt(ax*ax + ay*ay);
+                if (mag > 0) {
+                    ax = (ax / mag) * ACCEL;
+                    ay = (ay / mag) * ACCEL;
+                }
+                
+                fpvVelX += ax;
+                fpvVelY += ay;
+                fpvVelZ += az * ACCEL;
+                
+                // Apply friction (inertia)
+                const FRICTION = 0.88;
+                fpvVelX *= FRICTION;
+                fpvVelY *= FRICTION;
+                fpvVelZ *= FRICTION;
+                
+                // Only trigger camera update if moving
+                if (Math.abs(fpvVelX) > 0.05 || Math.abs(fpvVelY) > 0.05 || Math.abs(fpvVelZ) > 0.05) {
+                    fpvX += fpvVelX;
+                    fpvY += fpvVelY;
+                    fpvZ += fpvVelZ;
+                    
+                    // Simple head bobbing effect while walking
+                    let bobOffset = 0;
+                    if (mag > 0 && Math.abs(fpvVelZ) < 0.1) {
+                        const speed = Math.sqrt(fpvVelX*fpvVelX + fpvVelY*fpvVelY);
+                        bobOffset = Math.sin(Date.now() / 150) * (speed * 0.4); 
+                    }
+                    
+                    updateCamera(bobOffset);
+                }
+            }
+            requestAnimationFrame(fpvLoop);
+        }
+        fpvLoop();
+
+        function updateFurnitureTransforms() {
+            const is3D = blueprintWrapper.classList.contains('is-3d');
+            document.querySelectorAll('.furniture-item').forEach(furn => {
+                const attached = furn.getAttribute('data-attached') || 'floor';
+                if (is3D) {
+                    if (attached === 'floor') furn.style.transform = 'translate(-50%, -50%) translateZ(5px)';
+                    else if (attached === 'wall-north') furn.style.transform = 'translate(-50%, -50%) translateY(5px) translateZ(80px) rotateX(-90deg)';
+                    else if (attached === 'wall-south') furn.style.transform = 'translate(-50%, -50%) translateY(-5px) translateZ(80px) rotateX(90deg) rotateZ(180deg)';
+                    else if (attached === 'wall-east') furn.style.transform = 'translate(-50%, -50%) translateX(-5px) translateZ(80px) rotateY(-90deg) rotateZ(-90deg)';
+                    else if (attached === 'wall-west') furn.style.transform = 'translate(-50%, -50%) translateX(5px) translateZ(80px) rotateY(90deg) rotateZ(90deg)';
+                } else {
+                    furn.style.transform = 'translate(-50%, -50%)';
+                }
+            });
+        }
+
+        function updateCamera(bobOffset = 0) {
+            updateFurnitureTransforms();
+            
+            let cx = 0, cy = 0;
+            if (isFocusMode && focusedRoomIds.size > 0) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                document.querySelectorAll('.blueprint-room').forEach(r => {
+                    if (focusedRoomIds.has(r.getAttribute('data-room-id'))) {
+                        const x = parseFloat(r.style.left) || 0;
+                        const y = parseFloat(r.style.top) || 0;
+                        const w = r.offsetWidth;
+                        const h = r.offsetHeight;
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x + w);
+                        maxY = Math.max(maxY, y + h);
+                    }
+                });
+                
+                if (minX !== Infinity) {
+                    const rx = (minX + maxX) / 2;
+                    const ry = (minY + maxY) / 2;
+                    const wW = blueprintWrapper.offsetWidth;
+                    const wH = blueprintWrapper.offsetHeight;
+                    cx = (wW / 2) - rx;
+                    cy = (wH / 2) - ry;
+                }
+            }
+
+            if (!blueprintWrapper.classList.contains('is-3d')) {
+                // 2D Camera
+                if (isFocusMode) {
+                    container3D.style.transform = `scale(1.5) translate(${cx / 1.5}px, ${cy / 1.5}px)`;
+                } else {
+                    container3D.style.transform = '';
+                }
+                
+                // Ensure all rooms and doorways are fully visible in 2D, and floor planes are hidden
+                document.querySelectorAll('.blueprint-room, .blueprint-doorway').forEach(el => {
+                    el.classList.remove('active-room');
+                    el.style.opacity = '1';
+                });
+                document.querySelectorAll('.blueprint-floor-plane').forEach(el => {
+                    el.classList.remove('active-plane');
+                    el.style.opacity = '0';
+                });
+                return;
+            }
+            
+            // 3D Camera
+            const activeFloor = floors[activeFloorIndex];
+            const heightZ = activeFloor.level * 200;
+            const zOffset = -heightZ - 1000;
+            
+            if (isFirstPersonMode) {
+                const perspective = 800;
+                blueprintWrapper.style.perspective = perspective + 'px';
+                
+                // Keep the floor planes and rooms solid around the player
+                document.querySelectorAll('.blueprint-room, .blueprint-doorway').forEach(el => el.classList.add('active-room'));
+                document.querySelectorAll('.blueprint-floor-plane').forEach(el => el.classList.add('active-plane'));
+                
+                // Actual Room floor Z in the world is: base_z + 30 = (heightZ + 1000) + 30
+                const roomFloorZ = heightZ + 1000 + 30;
+                const eyeZ = roomFloorZ + fpvZ + bobOffset;
+                
+                container3D.style.transform = `
+                    translateZ(${perspective}px)
+                    rotateX(${fpvPitch}deg)
+                    rotateZ(${fpvYaw}deg)
+                    translate3d(${-fpvX}px, ${-fpvY}px, ${-eyeZ}px)
+                `;
+                return;
+            } else {
+                blueprintWrapper.style.perspective = '2500px';
+            }
+            
+            if (isFocusMode) {
+                // Focus 3D view: Translate the exact coordinate to center, then rotate and scale using dynamic orbit
+                container3D.style.transform = `rotateX(${orbitRotX}deg) rotateZ(${orbitRotZ}deg) scale(1.5) translateZ(${zOffset}px) translate(${cx}px, ${cy}px)`;
+            } else {
+                // Normal 3D Pan
+                container3D.style.transform = `rotateX(60deg) rotateZ(-45deg) scale(0.65) translateZ(${zOffset}px)`;
+            }
+            
+            // Highlight active floor plane and rooms/doorways
+            document.querySelectorAll('.blueprint-floor-plane').forEach(p => {
+                p.classList.toggle('active-plane', p.getAttribute('data-floor-id') === activeFloor.id);
+                if (!p.classList.contains('active-plane')) p.style.opacity = '';
+            });
+            document.querySelectorAll('.blueprint-room, .blueprint-doorway').forEach(r => {
+                const floorId = r.getAttribute('data-current-floor') || r.classList.value.match(/floor-layer-([^\s]+)/)[1];
+                r.classList.toggle('active-room', floorId === activeFloor.id);
+                if (!r.classList.contains('active-room')) r.style.opacity = '';
+            });
+        }
+
+        if(toggleBtn && blueprintWrapper) {
+            toggleBtn.addEventListener('click', function() {
+                blueprintWrapper.classList.add('is-animating');
+                setTimeout(() => blueprintWrapper.classList.remove('is-animating'), 1200);
+                
+                blueprintWrapper.classList.toggle('is-3d');
+                if(blueprintWrapper.classList.contains('is-3d')) {
+                    toggleBtn.innerHTML = '<i class="bi bi-grid-1x2"></i> RETURN TO 2D';
+                    history.replaceState(null, null, '#3d-' + floors[activeFloorIndex].id);
+                    updateCamera();
+                } else {
+                    toggleBtn.innerHTML = '<i class="bi bi-box"></i> TOGGLE 3D VIEW';
+                    history.replaceState(null, null, ' ');
+                    updateCamera();
+                }
+            });
+        }
+
+        // Room and Furniture Drag Logic
+        let draggedRoom = null;
+        let draggedFurn = null;
+          let resizingRoom = null;
+          let startW = 0;
+          let startH = 0;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        
+          document.querySelectorAll('.room-resizer').forEach(resizer => {
+              resizer.addEventListener('mousedown', function(e) {
+                  if(e.button !== 0) return;
+                  if(blueprintWrapper.classList.contains('is-3d')) return; // No resizing in 3D
+                  e.stopPropagation(); // Prevent room dragging
+                    e.preventDefault(); // Prevent native HTML drag
+                  
+                  resizingRoom = this.closest('.blueprint-room');
+                  startW = resizingRoom.offsetWidth;
+                  startH = resizingRoom.offsetHeight;
+                  resizingRoom.dataset.mouseX = e.clientX;
+                  resizingRoom.dataset.mouseY = e.clientY;
+              });
+          });
+
+          document.querySelectorAll('.blueprint-room').forEach(room => {
+            room.addEventListener('mousedown', function(e) {
+                if(e.button !== 0) return;
+                if(blueprintWrapper.classList.contains('is-focus-mode')) return; // Disable room drag in focus mode
+                
+                e.preventDefault(); // VERY IMPORTANT: Prevent native HTML drag
+                  draggedRoom = this;
+                const rect = draggedRoom.getBoundingClientRect();
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+                
+                draggedRoom.dataset.startX = parseFloat(draggedRoom.style.left) || 0;
+                draggedRoom.dataset.startY = parseFloat(draggedRoom.style.top) || 0;
+                draggedRoom.dataset.mouseX = e.clientX;
+                draggedRoom.dataset.mouseY = e.clientY;
+                draggedRoom.style.zIndex = 1000;
+                draggedRoom.style.transition = 'transform 1.2s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 1.2s ease, background-color 0.3s';
+            });
+        });
+
+        document.querySelectorAll('.furniture-item').forEach(furn => {
+            furn.addEventListener('mousedown', function(e) {
+                if(e.button !== 0) return;
+                e.preventDefault();
+                e.stopPropagation(); // VERY IMPORTANT: Prevent dragging room
+                draggedFurn = this;
+                
+                draggedFurn.dataset.startX = parseFloat(draggedFurn.style.left) || 0;
+                draggedFurn.dataset.startY = parseFloat(draggedFurn.style.top) || 0;
+                draggedFurn.dataset.mouseX = e.clientX;
+                draggedFurn.dataset.mouseY = e.clientY;
+                draggedFurn.style.zIndex = 3000;
+                draggedFurn.style.transition = 'transform 0.1s linear';
+            });
+        });
+
+        blueprintWrapper.addEventListener('mousedown', function(e) {
+            if (e.target.closest('.blueprint-room') || e.target.closest('.blueprint-doorway') || e.target.closest('.furniture-item')) return;
+            if (isFocusMode && blueprintWrapper.classList.contains('is-3d')) {
+                isOrbiting = true;
+                orbitStartX = e.clientX;
+                orbitStartY = e.clientY;
+                initialOrbitZ = orbitRotZ;
+                initialOrbitX = orbitRotX;
+                blueprintWrapper.style.cursor = 'grabbing';
+            }
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (isOrbiting) {
+                const dx = e.clientX - orbitStartX;
+                const dy = e.clientY - orbitStartY;
+                orbitRotZ = initialOrbitZ - dx * 0.5; // Inverted
+                orbitRotX = initialOrbitX + dy * 0.5; // Inverted
+                orbitRotX = Math.max(0, Math.min(85, orbitRotX)); // Prevent singularity at 90deg
+                updateCamera();
+                return;
+            }
+            if(resizingRoom) {
+                const dx = e.clientX - parseFloat(resizingRoom.dataset.mouseX);
+                const dy = e.clientY - parseFloat(resizingRoom.dataset.mouseY);
+                
+                // Snap to 20px grid (1 unit)
+                let newW = Math.max(40, startW + dx);
+                let newH = Math.max(40, startH + dy);
+                
+                // Optional: Snap to 20px steps while dragging
+                newW = Math.round(newW / 20) * 20;
+                newH = Math.round(newH / 20) * 20;
+                
+                resizingRoom.style.width = newW + 'px';
+                resizingRoom.style.height = newH + 'px';
+                
+                // Update label live
+                const lbl = resizingRoom.querySelector('.blueprint-title');
+                // The label also has small, so let's check
+                const smallLbl = resizingRoom.querySelector('small');
+                if(smallLbl) {
+                    const typeText = smallLbl.innerText.split(' - ')[0];
+                    smallLbl.innerText = `${typeText} - ${(newW/20).toFixed(1)} x ${(newH/20).toFixed(1)} {{ house.unit }}`;
+                }
+            } else if (draggedFurn) {
+                const parentRoom = draggedFurn.closest('.blueprint-room');
+                let fnX, fnY;
+                const currentScale = 1.5; // Focus mode scale
+                
+                if(blueprintWrapper.classList.contains('is-3d')) {
+                    const currentRotX = isFocusMode ? orbitRotX : 60;
+                    const currentRotZ = isFocusMode ? orbitRotZ : -45;
+                    const scale = isFocusMode ? 1.5 : 0.65;
+                    
+                    const totalDx = (e.clientX - parseFloat(draggedFurn.dataset.mouseX)) / scale;
+                    const totalDy = (e.clientY - parseFloat(draggedFurn.dataset.mouseY)) / scale;
+                    
+                    const planeX = totalDx;
+                    // Protect against division by zero if orbitRotX is exactly 90 (clamped to 85, so safe)
+                    const planeY = totalDy / Math.cos(currentRotX * Math.PI / 180);
+                    
+                    const rad = -currentRotZ * Math.PI / 180; // Inverse rotation
+                    const realX = planeX * Math.cos(rad) - planeY * Math.sin(rad);
+                    const realY = planeX * Math.sin(rad) + planeY * Math.cos(rad);
+                    
+                    fnX = parseFloat(draggedFurn.dataset.startX) + realX;
+                    fnY = parseFloat(draggedFurn.dataset.startY) + realY;
+                } else {
+                    const totalDx = (e.clientX - parseFloat(draggedFurn.dataset.mouseX)) / currentScale;
+                    const totalDy = (e.clientY - parseFloat(draggedFurn.dataset.mouseY)) / currentScale;
+                    fnX = parseFloat(draggedFurn.dataset.startX) + totalDx;
+                    fnY = parseFloat(draggedFurn.dataset.startY) + totalDy;
+                }
+                
+                // Constrain within room bounds
+                const rW = parentRoom.offsetWidth;
+                const rH = parentRoom.offsetHeight;
+                
+                // Allow crossing bounds if in connected mode
+                if (!isConnectedFocusMode) {
+                    fnX = Math.max(0, Math.min(fnX, rW));
+                    fnY = Math.max(0, Math.min(fnY, rH));
+                }
+                
+                // Keep magnetic snapping to nearest walls of current parent room
+                let attached = 'floor';
+                if (fnY < 15 && fnY >= -15 && fnX >= 0 && fnX <= rW) { fnY = 0; attached = 'wall-north'; }
+                else if (fnY > rH - 15 && fnY <= rH + 15 && fnX >= 0 && fnX <= rW) { fnY = rH; attached = 'wall-south'; }
+                else if (fnX > rW - 15 && fnX <= rW + 15 && fnY >= 0 && fnY <= rH) { fnX = rW; attached = 'wall-east'; }
+                else if (fnX < 15 && fnX >= -15 && fnY >= 0 && fnY <= rH) { fnX = 0; attached = 'wall-west'; }
+                
+                draggedFurn.classList.remove('floor', 'wall-north', 'wall-south', 'wall-east', 'wall-west');
+                draggedFurn.classList.add(attached);
+                draggedFurn.setAttribute('data-attached', attached);
+                
+                // Explicitly apply 3D transforms in JS to guarantee they overwrite any bugs
+                if (blueprintWrapper.classList.contains('is-3d')) {
+                    if (attached === 'floor') draggedFurn.style.transform = 'translate(-50%, -50%) translateZ(5px)';
+                    else if (attached === 'wall-north') draggedFurn.style.transform = 'translate(-50%, -50%) translateY(5px) translateZ(80px) rotateX(-90deg)';
+                    else if (attached === 'wall-south') draggedFurn.style.transform = 'translate(-50%, -50%) translateY(-5px) translateZ(80px) rotateX(90deg) rotateZ(180deg)';
+                    else if (attached === 'wall-east') draggedFurn.style.transform = 'translate(-50%, -50%) translateX(-5px) translateZ(80px) rotateY(-90deg) rotateZ(-90deg)';
+                    else if (attached === 'wall-west') draggedFurn.style.transform = 'translate(-50%, -50%) translateX(5px) translateZ(80px) rotateY(90deg) rotateZ(90deg)';
+                } else {
+                    draggedFurn.style.transform = 'translate(-50%, -50%)';
+                }
+                
+                draggedFurn.style.left = fnX + 'px';
+                draggedFurn.style.top = fnY + 'px';
+                
+            } else if(draggedRoom) {
+                const parentRect = draggedRoom.parentElement.getBoundingClientRect();
+                let newX, newY;
+                
+                if(blueprintWrapper.classList.contains('is-3d')) {
+                    // Calculate total absolute movement since mousedown
+                    const totalDx = (e.clientX - parseFloat(draggedRoom.dataset.mouseX)) / 0.65; // Undo scale
+                    const totalDy = (e.clientY - parseFloat(draggedRoom.dataset.mouseY)) / 0.65;
+                    
+                    const dy2 = totalDy * 2; // Undo rotateX(60deg) -> 1/cos(60) = 2
+                    
+                    // Undo rotateZ(-45deg) -> rotate by +45deg
+                    const cos45 = 0.7071;
+                    const sin45 = 0.7071;
+                    const realX = (totalDx * cos45) - (dy2 * sin45);
+                    const realY = (totalDx * sin45) + (dy2 * cos45);
+                    
+                    newX = parseFloat(draggedRoom.dataset.startX) + realX;
+                    newY = parseFloat(draggedRoom.dataset.startY) + realY;
+                } else {
+                    newX = e.clientX - parentRect.left - offsetX;
+                    newY = e.clientY - parentRect.top - offsetY;
+                }
+
+                // --- Magnetic Snapping Logic ---
+                let snapX = Math.round(newX / 20) * 20;
+                  let snapY = Math.round(newY / 20) * 20;
+                const SNAP_DIST = 15;
+                const draggedRect = {
+                    left: newX,
+                    top: newY,
+                    right: newX + draggedRoom.offsetWidth,
+                    bottom: newY + draggedRoom.offsetHeight,
+                    floor: draggedRoom.getAttribute('data-current-floor')
+                };
+
+                document.querySelectorAll('.blueprint-room').forEach(other => {
+                    if (other === draggedRoom) return;
+                    if (other.getAttribute('data-current-floor') !== draggedRect.floor) return;
+                    
+                    const oLeft = parseFloat(other.style.left) || 0;
+                    const oTop = parseFloat(other.style.top) || 0;
+                    const oRight = oLeft + other.offsetWidth;
+                    const oBottom = oTop + other.offsetHeight;
+
+                    // Check vertical overlap for horizontal snapping
+                    const vertOverlap = (draggedRect.top < oBottom && draggedRect.bottom > oTop);
+                    // Check horizontal overlap for vertical snapping
+                    const horizOverlap = (draggedRect.left < oRight && draggedRect.right > oLeft);
+
+                    // Snap Horizontal Edges
+                    if (vertOverlap) {
+                        if (Math.abs(draggedRect.right - oLeft) < SNAP_DIST) snapX = oLeft - draggedRoom.offsetWidth;
+                        if (Math.abs(draggedRect.left - oRight) < SNAP_DIST) snapX = oRight;
+                    }
+                    // Snap Vertical Edges
+                    if (horizOverlap) {
+                        if (Math.abs(draggedRect.bottom - oTop) < SNAP_DIST) snapY = oTop - draggedRoom.offsetHeight;
+                        if (Math.abs(draggedRect.top - oBottom) < SNAP_DIST) snapY = oBottom;
+                    }
+                    // Alignments
+                    if (Math.abs(draggedRect.top - oTop) < SNAP_DIST && horizOverlap) snapY = oTop;
+                    if (Math.abs(draggedRect.left - oLeft) < SNAP_DIST && vertOverlap) snapX = oLeft;
+                });
+
+                draggedRoom.style.left = snapX + 'px';
+                draggedRoom.style.top = snapY + 'px';
+                
+                // Live doorway updates
+                updateDoorways();
+            }
+        });
+
+        // Doorway Connection System
+        let connectedRooms = {};
+        function updateDoorways() {
+            // Clear previous doorways
+            document.querySelectorAll('.blueprint-doorway').forEach(e => e.remove());
+            connectedRooms = {};
+            const rooms = Array.from(document.querySelectorAll('.blueprint-room'));
+            rooms.forEach(r => connectedRooms[r.getAttribute('data-room-id')] = new Set());
+            for (let i = 0; i < rooms.length; i++) {
+                for (let j = i + 1; j < rooms.length; j++) {
+                    const A = rooms[i];
+                    const B = rooms[j];
+                    const floorA = A.getAttribute('data-current-floor');
+                    const floorB = B.getAttribute('data-current-floor');
+                    if (floorA !== floorB) continue;
+
+                    const aL = parseFloat(A.style.left)||0, aT = parseFloat(A.style.top)||0;
+                    const aR = aL + A.offsetWidth, aB = aT + A.offsetHeight;
+                    const bL = parseFloat(B.style.left)||0, bT = parseFloat(B.style.top)||0;
+                    const bR = bL + B.offsetWidth, bB = bT + B.offsetHeight;
+
+                    // Horizontal touch (left-to-right)
+                    const touchX = Math.abs(aR - bL) < 2 || Math.abs(aL - bR) < 2;
+                    const overlapY = Math.max(0, Math.min(aB, bB) - Math.max(aT, bT));
+
+                    if (touchX && overlapY >= 40) {
+                        const doorY = Math.max(aT, bT) + overlapY / 2;
+                        const doorX = (Math.abs(aR - bL) < 2) ? aR : aL;
+                        createDoorway(doorX, doorY, 'horizontal', floorA, A.getAttribute('data-room-id'), B.getAttribute('data-room-id'));
+                        connectedRooms[A.getAttribute('data-room-id')].add(B.getAttribute('data-room-id'));
+                        connectedRooms[B.getAttribute('data-room-id')].add(A.getAttribute('data-room-id'));
+                    }
+
+                    // Vertical touch (top-to-bottom)
+                    const touchY = Math.abs(aB - bT) < 2 || Math.abs(aT - bB) < 2;
+                    const overlapX = Math.max(0, Math.min(aR, bR) - Math.max(aL, bL));
+
+                    if (touchY && overlapX >= 40) {
+                        const doorX = Math.max(aL, bL) + overlapX / 2;
+                        const doorY = (Math.abs(aB - bT) < 2) ? aB : aT;
+                        createDoorway(doorX, doorY, 'vertical', floorA, A.getAttribute('data-room-id'), B.getAttribute('data-room-id'));
+                        connectedRooms[A.getAttribute('data-room-id')].add(B.getAttribute('data-room-id'));
+                        connectedRooms[B.getAttribute('data-room-id')].add(A.getAttribute('data-room-id'));
+                    }
+                }
+            }
+        }
+
+        function createDoorway(x, y, orientation, floorId, idA, idB) {
+            const door = document.createElement('div');
+            door.className = `blueprint-doorway floor-layer-${floorId} ${orientation}`;
+            door.setAttribute('data-current-floor', floorId);
+            door.setAttribute('data-room-a', idA);
+            door.setAttribute('data-room-b', idB);
+            
+            const leaf = document.createElement('div');
+            leaf.className = 'blueprint-doorway-leaf';
+            door.appendChild(leaf);
+            
+            // Check active state
+            if(floors[activeFloorIndex] && floors[activeFloorIndex].id === floorId) {
+                door.classList.add('active-room');
+            }
+            
+            door.style.left = x + 'px';
+            door.style.top = y + 'px';
+            document.getElementById('blueprintContainer3D').appendChild(door);
+        }
+
+        // Initialize doorways immediately
+        updateDoorways();
+        window.addEventListener('DOMContentLoaded', updateDoorways);
+
+        // The Magic Floor Gliding & Camera Panning via Scroll Wheel!
+        if (blueprintWrapper && floors.length > 0) {
+            blueprintWrapper.addEventListener('wheel', function(e) {
+                if(!blueprintWrapper.classList.contains('is-3d')) return;
+                e.preventDefault(); // Prevent page scrolling while panning
+                
+                // Determine direction
+                if(e.deltaY < 0 && activeFloorIndex < floors.length - 1) {
+                    activeFloorIndex++; // Scroll Up -> Camera moves up
+                } else if(e.deltaY > 0 && activeFloorIndex > 0) {
+                    activeFloorIndex--; // Scroll Down -> Camera moves down
+                } else {
+                    return; // Reached bounds
+                }
+                
+                const newFloor = floors[activeFloorIndex];
+                
+                // If we are dragging a room, it glides with the camera!
+                if(draggedRoom) {
+                    const currentFloorId = draggedRoom.getAttribute('data-current-floor');
+                    
+                    draggedRoom.classList.remove('floor-layer-' + currentFloorId);
+                    draggedRoom.classList.add('floor-layer-' + newFloor.id);
+                    draggedRoom.setAttribute('data-current-floor', newFloor.id);
+                    
+                    const indicator = draggedRoom.querySelector('.blueprint-floor-indicator');
+                    if(indicator) indicator.innerText = newFloor.name;
+                    
+                    // Save floor to backend immediately
+                    fetch('/project/{{ project_id }}/update_floor', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ room_id: draggedRoom.getAttribute('data-room-id'), floor: newFloor.id })
+                    });
+                }
+                
+                // Persist 3D state
+                window.location.hash = '#3d-' + newFloor.id;
+                
+                // Pan Camera to follow the active floor
+                updateCamera();
+                
+            }, {passive: false});
+        }
+
+        document.addEventListener('mouseup', function(e) {
+            if (isOrbiting) {
+                isOrbiting = false;
+                blueprintWrapper.style.cursor = '';
+            }
+            if(resizingRoom && e.button === 0) {
+                const roomId = resizingRoom.getAttribute('data-room-id');
+                const w = parseFloat(resizingRoom.style.width);
+                const h = parseFloat(resizingRoom.style.height);
+                
+                fetch('/project/{{ project_id }}/update_size', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: roomId, width: w, height: h })
+                }).then(() => {
+                    // Reload page to update 3D walls if needed
+                    window.location.reload();
+                });
+                
+                resizingRoom = null;
+            } else if (draggedFurn && e.button === 0) {
+                draggedFurn.style.zIndex = 100;
+                draggedFurn.style.transition = 'transform 0.3s';
+                
+                const origRoomId = draggedFurn.getAttribute('data-room-id');
+                const furnId = draggedFurn.getAttribute('data-furn-id');
+                const attached = draggedFurn.getAttribute('data-attached') || 'floor';
+                let localX = parseFloat(draggedFurn.style.left);
+                let localY = parseFloat(draggedFurn.style.top);
+                let targetRoomId = origRoomId;
+                
+                // If in connected focus mode, we might have dropped it in another room!
+                if (isConnectedFocusMode) {
+                    const origRoom = draggedFurn.closest('.blueprint-room');
+                    const origRx = parseFloat(origRoom.style.left) || 0;
+                    const origRy = parseFloat(origRoom.style.top) || 0;
+                    const globalX = origRx + localX;
+                    const globalY = origRy + localY;
+                    
+                    // Find which room this global coordinate falls into
+                    document.querySelectorAll('.blueprint-room').forEach(r => {
+                        const rx = parseFloat(r.style.left) || 0;
+                        const ry = parseFloat(r.style.top) || 0;
+                        const rw = r.offsetWidth;
+                        const rh = r.offsetHeight;
+                        
+                        if (globalX >= rx && globalX <= rx + rw && globalY >= ry && globalY <= ry + rh) {
+                            targetRoomId = r.getAttribute('data-room-id');
+                            localX = globalX - rx;
+                            localY = globalY - ry;
+                        }
+                    });
+                }
+                
+                const tempFurn = draggedFurn;
+                fetch('/project/{{ project_id }}/api/update_furniture', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        room_id: targetRoomId, 
+                        old_room_id: origRoomId,
+                        furn_id: furnId, 
+                        x: localX, 
+                        y: localY, 
+                        attached_to: attached 
+                    })
+                }).then(() => {
+                    if (targetRoomId !== origRoomId) {
+                        // Move the DOM element instead of reloading to preserve Focus Mode
+                        const targetRoom = document.querySelector(`.blueprint-room[data-room-id="${targetRoomId}"]`);
+                        if (targetRoom && tempFurn) {
+                            tempFurn.setAttribute('data-room-id', targetRoomId);
+                            tempFurn.style.left = localX + 'px';
+                            tempFurn.style.top = localY + 'px';
+                            targetRoom.appendChild(tempFurn);
+                        }
+                    }
+                });
+                
+                draggedFurn = null;
+            } else if(draggedRoom && e.button === 0) {
+                draggedRoom.style.zIndex = '';
+                draggedRoom.style.transition = 'transform 1.2s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 1.2s ease, background-color 0.3s';
+                
+                // Save coordinates to Python backend seamlessly
+                const roomId = draggedRoom.getAttribute('data-room-id');
+                const x = parseFloat(draggedRoom.style.left);
+                const y = parseFloat(draggedRoom.style.top);
+                
+                fetch('/project/{{ project_id }}/update_coordinates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: roomId, x: x, y: y })
+                });
+
+                draggedRoom = null;
+            }
+        });
+
+        // 3D State Persistence via URL Hash
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.location.hash.startsWith('#3d-')) {
+                const floorId = window.location.hash.replace('#3d-', '');
+                const foundIndex = floors.findIndex(f => f.id === floorId);
+                if (foundIndex !== -1) {
+                    activeFloorIndex = foundIndex;
+                    blueprintWrapper.classList.add('is-3d');
+                    toggleBtn.innerHTML = '<i class="bi bi-grid-1x2"></i> RETURN TO 2D';
+                    updateCamera();
+                }
+            }
+        });
+
+        // Context Menu Logic
+        let contextRoomId = null;
+        const ctxMenu = document.getElementById('roomContextMenu');
+
+        document.addEventListener('contextmenu', function(e) {
+            const roomEl = e.target.closest('.blueprint-room');
+            if (roomEl) {
+                e.preventDefault();
+                contextRoomId = roomEl.getAttribute('data-room-id');
+                ctxMenu.style.display = 'block';
+                ctxMenu.style.left = e.pageX + 'px';
+                ctxMenu.style.top = e.pageY + 'px';
+            } else {
+                ctxMenu.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#roomContextMenu')) {
+                ctxMenu.style.display = 'none';
+            }
+        });
+
+        // Context Menu Actions
+        document.getElementById('ctxDuplicate').addEventListener('click', function(e) {
+            e.preventDefault();
+            if(contextRoomId) {
+                fetch('/project/{{ project_id }}/api/duplicate_room', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: contextRoomId })
+                }).then(r => r.json()).then(data => {
+                    if(data.status === 'success') window.location.reload();
+                });
+            }
+        });
+
+        document.getElementById('ctxRotate').addEventListener('click', function(e) {
+            e.preventDefault();
+            if(contextRoomId) {
+                fetch('/project/{{ project_id }}/api/rotate_room', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: contextRoomId })
+                }).then(r => r.json()).then(data => {
+                    if(data.status === 'success') {
+                        // Update instantly without reloading
+                        const roomEl = document.querySelector(`.blueprint-room[data-room-id="${contextRoomId}"]`);
+                        if(roomEl) {
+                            roomEl.style.width = data.width + 'px';
+                            roomEl.style.minHeight = data.height + 'px';
+                        }
+                        ctxMenu.style.display = 'none';
+                        updateDoorways();
+                    }
+                });
+            }
+        });
+
+        document.getElementById('ctxDelete').addEventListener('click', function(e) {
+            e.preventDefault();
+            if(contextRoomId) {
+                fetch('/project/{{ project_id }}/api/delete_room', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: contextRoomId })
+                }).then(r => r.json()).then(data => {
+                    if(data.status === 'success') window.location.reload();
+                });
+            }
+        });
+    </script>
+
+    <script>
+        // Preserve scroll position across page reloads synchronously to prevent visual jumping
+        window.addEventListener('beforeunload', function() {
+            sessionStorage.setItem('scrollPosition_' + window.location.pathname, window.scrollY);
+        });
+
+        (function() {
+            const scrollPos = sessionStorage.getItem('scrollPosition_' + window.location.pathname);
+            if (scrollPos !== null) {
+                window.scrollTo({ top: parseInt(scrollPos), behavior: 'instant' });
+                sessionStorage.removeItem('scrollPosition_' + window.location.pathname);
+            }
+        })();
+    </script>
+</body>
+
+</html>

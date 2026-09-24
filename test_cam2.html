@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin: 0; overflow: hidden; background: #000; color: white; font-family: sans-serif; }
+  .wrapper { width: 100vw; height: 100vh; perspective: 800px; position: relative; }
+  .world { position: absolute; top: 50%; left: 50%; transform-style: preserve-3d; }
+  .floor { position: absolute; width: 1000px; height: 1000px; background: repeating-linear-gradient(45deg, #333, #333 50px, #444 50px, #444 100px); transform: translate(-50%, -50%); }
+  .box { position: absolute; width: 50px; height: 50px; background: red; transform: translate3d(0, -100px, 25px); }
+</style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="world" id="world">
+      <div class="floor"></div>
+      <div class="box"></div>
+    </div>
+  </div>
+  <div style="position:absolute; top: 10px; left:10px;" id="info">Pitch: 90</div>
+<script>
+  let pitch = 90; 
+  const world = document.getElementById('world');
+  function update() {
+    world.style.transform = 	ranslateZ(800px) rotateX(\deg) translate3d(0, 0, -50px);
+    document.getElementById('info').innerText = 'Pitch: ' + pitch;
+  }
+  update();
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp') pitch -= 5;
+    if (e.key === 'ArrowDown') pitch += 5;
+    update();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+{
+    "cb4c0de0-2a84-4ab5-89dc-f86e7aa6984c": {
+        "name": "Legacy Project",
+        "budget": 9999999999999.0,
+        "unit": "ft",
+        "rooms": {
+            "7e977c46-814c-4ed0-b189-79ebc04b214f": {
+                "id": "7e977c46-814c-4ed0-b189-79ebc04b214f",
+                "name": "dining",
+                "type": "Bedroom",
+                "floor": "f_ground",
+                "cost": 0.03,
+                "area": 99.0,
+                "flooring": "Standard",
+                "wall_color": "White",
+                "windows": 0,
+                "x": 100.0,
+                "y": 140.0,
+                "width": 220.0,
+                "height": 180.0,
+                "furniture": {
+                    "cfc0add6-4bc9-4e01-a064-bb3347fc776b": {
+                        "id": "cfc0add6-4bc9-4e01-a064-bb3347fc776b",
+                        "name": "tv",
+                        "cost": 200000.0,
+                        "position": "wall",
+                        "model": "tv",
+                        "x": 155.053,
+                        "y": 71.33670000000001,
+                        "attached_to": "floor"
+                    }
+                }
+            },
+            "b495f613-9012-4c5a-af06-e006ad2c1cdf": {
+                "id": "b495f613-9012-4c5a-af06-e006ad2c1cdf",
+                "name": "dining",
+                "type": "Bedroom",
+                "floor": "f_ground",
+                "cost": 0.02,
+                "area": 256.0,
+                "flooring": "Standard",
+                "wall_color": "White",
+                "windows": 0,
+                "x": 320.0,
+                "y": 40.0,
+                "width": 320.0,
+                "height": 320.0,
+                "furniture": {
+                    "a0679546-4a9c-423e-8445-ab2e6d68b5a0": {
+                        "id": "a0679546-4a9c-423e-8445-ab2e6d68b5a0",
+                        "name": "dining",
+                        "cost": 0.02,
+                        "position": "center",
+                        "x": 146.667,
+                        "y": 163.604,
+                        "attached_to": "floor"
+                    }
+                }
+            }
+        },
+        "floors": [
+            {
+                "id": "6240a6bb-e7a7-4f90-9d44-1ded3277fe41",
+                "name": "sub basement",
+                "level": -3
+            },
+            {
+                "id": "f_ground",
+                "name": "Ground Floor",
+                "level": 0
+            },
+            {
+                "id": "f_first",
+                "name": "First Floor",
+                "level": 1
+            },
+            {
+                "id": "f_second",
+                "name": "Second Floor",
+                "level": 2
+            },
+            {
+                "id": "f_attic",
+                "name": "Attic",
+                "level": 3
+            },
+            {
+                "id": "f_rooftop",
+                "name": "Rooftop",
+                "level": 4
+            }
+        ]
+    },
+    "2a170244-6d1e-4eab-9190-c97c6878d31d": {
+        "name": "house 1",
+        "budget": 1.0,
+        "unit": "ft",
+        "rooms": {},
+        "floors": [
+            {
+                "id": "f_basement",
+                "name": "Basement",
+                "level": -1
+            },
+            {
+                "id": "f_ground",
+                "name": "Ground Floor",
+                "level": 0
+            },
+            {
+                "id": "f_first",
+                "name": "First Floor",
+                "level": 1
+            },
+            {
+                "id": "f_second",
+                "name": "Second Floor",
+                "level": 2
+            },
+            {
+                "id": "f_attic",
+                "name": "Attic",
+                "level": 3
+            },
+            {
+                "id": "f_rooftop",
+                "name": "Rooftop",
+                "level": 4
+            }
+        ]
+    },
+    "c610fc3b-5313-4344-9c92-e2cbac4e05e3": {
+        "name": "victor von doom",
+        "budget": 1000000000.0,
+        "unit": "ft",
+        "rooms": {
+            "ed2c4547-af02-4003-bfda-82bccefd89a2": {
+                "id": "ed2c4547-af02-4003-bfda-82bccefd89a2",
+                "name": "Studio",
+                "type": "Living Room",
+                "floor": "f_ground",
+                "cost": 300000.0,
+                "area": 315.0,
+                "flooring": "softwood",
+                "wall_color": "light forest green",
+                "windows": 4,
+                "x": 20,
+                "y": 20,
+                "width": 420.0,
+                "height": 300.0,
+                "furniture": {}
+            },
+            "77e2b053-7546-4705-8086-ef7e9e0cfedd": {
+                "id": "77e2b053-7546-4705-8086-ef7e9e0cfedd",
+                "name": "bedroom",
+                "type": "Bedroom",
+                "floor": "f_ground",
+                "cost": 199999.0,
+                "area": 374.0,
+                "flooring": "grass",
+                "wall_color": "caramel",
+                "windows": 3,
+                "x": 560.0,
+                "y": 0.0,
+                "width": 440.0,
+                "height": 340.0,
+                "furniture": {}
+            }
+        },
+        "floors": [
+            {
+                "id": "f_basement",
+                "name": "Basement",
+                "level": -1
+            },
+            {
+                "id": "f_ground",
+                "name": "Ground Floor",
+                "level": 0
+            },
+            {
+                "id": "f_first",
+                "name": "First Floor",
+                "level": 1
+            },
+            {
+                "id": "f_second",
+                "name": "Second Floor",
+                "level": 2
+            },
+            {
+                "id": "f_attic",
+                "name": "Attic",
+                "level": 3
+            },
+            {
+                "id": "f_rooftop",
+                "name": "Rooftop",
+                "level": 4
+            }
+        ]
+    }
+}
