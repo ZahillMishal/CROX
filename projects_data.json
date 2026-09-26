@@ -25,8 +25,8 @@
                         "cost": 200000.0,
                         "position": "wall",
                         "model": "tv",
-                        "x": 155.053,
-                        "y": 71.33670000000001,
+                        "x": 47.8657,
+                        "y": 145.189,
                         "attached_to": "floor"
                     }
                 }
@@ -42,7 +42,7 @@
                 "wall_color": "White",
                 "windows": 0,
                 "x": 320.0,
-                "y": 40.0,
+                "y": 80.0,
                 "width": 320.0,
                 "height": 320.0,
                 "furniture": {
@@ -51,8 +51,8 @@
                         "name": "dining",
                         "cost": 0.02,
                         "position": "center",
-                        "x": 146.667,
-                        "y": 163.604,
+                        "x": 162.125,
+                        "y": 102.015,
                         "attached_to": "floor"
                     }
                 }
@@ -67,8 +67,8 @@
                 "flooring": "Carpet",
                 "wall_color": "#f1f529",
                 "windows": 4,
-                "x": 340.0,
-                "y": -280.0,
+                "x": 440.0,
+                "y": 20.0,
                 "width": 400.0,
                 "height": 500.0,
                 "furniture": {
@@ -78,8 +78,8 @@
                         "cost": 1000.0,
                         "position": "center",
                         "model": "archive",
-                        "x": 116.667,
-                        "y": 157.333,
+                        "x": 164.16200000000003,
+                        "y": 197.186,
                         "attached_to": "floor"
                     }
                 }
