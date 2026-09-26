@@ -12,16 +12,14 @@ class House:
     def __init__(self, name="Untitled Project", budget=100000, unit="ft"):
         self.name=name; self.budget=budget; self.unit=unit; self.rooms={}
         self.floors=[{"id":"f_basement","name":"Basement","level":-1},{"id":"f_ground","name":"Ground Floor","level":0},{"id":"f_first","name":"First Floor","level":1},{"id":"f_second","name":"Second Floor","level":2},{"id":"f_attic","name":"Attic","level":3},{"id":"f_rooftop","name":"Rooftop","level":4}]
-    def get_total_spending(self):
-        return sum(r.get('cost',0)+sum(f.get('cost',0) for f in r.get('furniture',{}).values()) for r in self.rooms.values())
+    def get_total_spending(self): return sum(r.get('cost',0)+sum(f.get('cost',0) for f in r.get('furniture',{}).values()) for r in self.rooms.values())
     def get_remaining_money(self): return self.budget-self.get_total_spending()
     def to_dict(self): return {'name':self.name,'budget':self.budget,'unit':self.unit,'rooms':self.rooms,'floors':self.floors}
     def from_dict(self,data):
         self.name=data.get('name','Untitled Project'); self.budget=data.get('budget',100000); self.unit=data.get('unit','ft'); self.rooms=data.get('rooms',{})
         for room in self.rooms.values():
-            room.setdefault('flooring','Standard'); room.setdefault('wall_color','Warm White'); room.setdefault('floor_texture',room.get('flooring','Standard')); room.setdefault('floor_color','Natural'); room.setdefault('wall_texture','Paint')
+            room.setdefault('flooring','Standard'); room.setdefault('wall_color','Warm White'); room.setdefault('floor_texture',room.get('flooring','Standard')); room.setdefault('floor_color','Natural Oak'); room.setdefault('wall_texture','Paint')
         self.floors=data.get('floors',[{"id":"f_basement","name":"Basement","level":-1},{"id":"f_ground","name":"Ground Floor","level":0},{"id":"f_first","name":"First Floor","level":1},{"id":"f_second","name":"Second Floor","level":2},{"id":"f_attic","name":"Attic","level":3},{"id":"f_rooftop","name":"Rooftop","level":4}]); self.floors=sorted(self.floors,key=lambda x:x['level'])
-
 projects={}
 def save_data():
     with open(DATA_FILE,'w') as f: json.dump({pid:h.to_dict() for pid,h in projects.items()},f,indent=4)
@@ -68,7 +66,7 @@ def add_room(project_id):
     if project_id not in projects:return redirect(url_for('dashboard'))
     h=projects[project_id]; name=request.form.get('name'); room_type=request.form.get('type'); floor=request.form.get('floor','f_ground'); cost=request.form.get('cost',type=float,default=0.0); wu=request.form.get('width',type=float,default=11.0); lu=request.form.get('length',type=float,default=9.0); flooring=request.form.get('flooring','Standard'); wall_color=request.form.get('wall_color','Warm White'); windows=request.form.get('windows',type=int,default=0)
     if name and room_type:
-        rid=str(uuid.uuid4()); off=len(h.rooms)*30; h.rooms[rid]={'id':rid,'name':name,'type':room_type,'floor':floor,'cost':cost,'area':wu*lu,'flooring':flooring,'floor_texture':flooring,'floor_color':'Natural','wall_color':wall_color,'wall_texture':'Paint','windows':windows,'x':20+off,'y':20+off,'width':wu*20,'height':lu*20,'furniture':{}}; save_data()
+        rid=str(uuid.uuid4()); off=len(h.rooms)*30; h.rooms[rid]={'id':rid,'name':name,'type':room_type,'floor':floor,'cost':cost,'area':wu*lu,'flooring':flooring,'floor_texture':flooring,'floor_color':'Natural Oak','wall_color':wall_color,'wall_texture':'Paint','windows':windows,'x':20+off,'y':20+off,'width':wu*20,'height':lu*20,'furniture':{}}; save_data()
     return redirect(url_for('project_editor',project_id=project_id))
 @app.route('/project/<project_id>/update_size',methods=['POST'])
 def update_size(project_id):
@@ -151,18 +149,17 @@ def delete_floor(project_id,floor_id):
 def room_appearance(project_id):
     if project_id not in projects:return jsonify({'status':'error'}),404
     h=projects[project_id]; names={f['id']:f['name'] for f in h.floors}; rooms=[]
-    for r in h.rooms.values(): rooms.append({'id':r['id'],'name':r.get('name','Unnamed Room'),'type':r.get('type',''),'floor':r.get('floor','f_ground'),'floor_name':names.get(r.get('floor'),'Unknown Floor'),'floor_texture':r.get('floor_texture',r.get('flooring','Standard')),'floor_color':r.get('floor_color','Natural'),'wall_texture':r.get('wall_texture','Paint'),'wall_color':r.get('wall_color','Warm White')})
+    for r in h.rooms.values(): rooms.append({'id':r['id'],'name':r.get('name','Unnamed Room'),'type':r.get('type',''),'floor':r.get('floor','f_ground'),'floor_name':names.get(r.get('floor'),'Unknown Floor'),'floor_texture':r.get('floor_texture',r.get('flooring','Standard')),'floor_color':r.get('floor_color','Natural Oak'),'wall_texture':r.get('wall_texture','Paint'),'wall_color':r.get('wall_color','Warm White')})
     return jsonify({'status':'success','rooms':rooms})
 @app.route('/project/<project_id>/api/update_room_appearance',methods=['POST'])
 def update_room_appearance(project_id):
     if project_id not in projects:return jsonify({'status':'error'}),404
     d=request.get_json() or {}; rid=d.get('room_id'); r=projects[project_id].rooms.get(rid)
     if not r:return jsonify({'status':'error','message':'Room not found'}),404
-    ft={'Light Oak','Natural Oak','Walnut','Herringbone Oak','White Marble','Travertine','Concrete','Dark Slate','Porcelain Stone','Soft Carpet','Grey Tile'}; fc={'Natural','Light','Warm','Cool','Dark'}; wt={'Paint','Microcement','Travertine','Fluted Oak','Natural Stone','White Marble','Vertical Walnut Slat','Plaster'}; wc={'Warm White','Soft Greige','Sand Beige','Sage Mist','Dusty Blue','Slate Blue','Charcoal','Taupe','Terracotta','Olive Grey','Pure White'}
-    if d.get('floor_texture') in ft:r['floor_texture']=d['floor_texture'];r['flooring']=d['floor_texture']
-    if d.get('floor_color') in fc:r['floor_color']=d['floor_color']
-    if d.get('wall_texture') in wt:r['wall_texture']=d['wall_texture']
-    if d.get('wall_color') in wc:r['wall_color']=d['wall_color']
+    for key in ('floor_texture','floor_color','wall_texture','wall_color'):
+        value=d.get(key)
+        if isinstance(value,str) and value.strip() and len(value)<=80: r[key]=value.strip()
+    r['flooring']=r.get('floor_texture',r.get('flooring','Standard')); r['wall_color']=r.get('wall_color','Warm White')
     save_data(); return jsonify({'status':'success','room':r})
 
 @app.after_request
@@ -170,8 +167,8 @@ def add_header(r):
     r.headers['Cache-Control']='no-cache, no-store, must-revalidate'; r.headers['Pragma']='no-cache'; r.headers['Expires']='0'
     if r.content_type and 'text/html' in r.content_type and request.path.startswith('/project/'):
         body=r.get_data(as_text=True)
-        if 'crox-materials.css' not in body: body=body.replace('</head>','<link rel="stylesheet" href="/static/crox-materials.css"></head>')
-        if 'crox-materials.js' not in body: body=body.replace('</body>','<script src="/static/crox-materials.js"></script></body>')
+        body=body.replace('</head>','<link rel="stylesheet" href="/static/crox-materials.css"><link rel="stylesheet" href="/static/crox-materials-v2.css"></head>')
+        body=body.replace('</body>','<script src="/static/crox-materials.js"></script><script src="/static/crox-materials-v2.js"></script><script src="/static/crox-materials-fpv-fix.js"></script></body>')
         r.set_data(body)
     return r
 if __name__=='__main__': app.run(debug=True)
