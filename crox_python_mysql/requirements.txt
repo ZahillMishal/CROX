@@ -1,0 +1,6 @@
+# CROX (Python + MySQL Edition) Dependencies
+# Python standard library includes tkinter and sqlite3 out of the box.
+# For connecting to a MySQL server, install mysql-connector-python or pymysql:
+
+mysql-connector-python>=8.0.0
+pymysql>=1.0.0
