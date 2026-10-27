@@ -72,17 +72,80 @@
                 "width": 400.0,
                 "height": 500.0,
                 "furniture": {
-                    "c3a1a2e1-377b-4c63-b4c0-d4faca2ec2f7": {
-                        "id": "c3a1a2e1-377b-4c63-b4c0-d4faca2ec2f7",
-                        "name": "book shelf",
-                        "cost": 1000.0,
-                        "position": "center",
-                        "model": "archive",
-                        "x": 164.16200000000003,
-                        "y": 197.186,
+                    "32cde89d-e73a-4674-837f-2236d8811aea": {
+                        "id": "32cde89d-e73a-4674-837f-2236d8811aea",
+                        "name": "light",
+                        "cost": 8000000.0,
+                        "position": "left",
+                        "model": "lamp",
+                        "x": 20,
+                        "y": 20,
                         "attached_to": "floor"
                     }
                 }
+            },
+            "e2ab04c9-0fe1-4871-9388-ea25fa28b49c": {
+                "id": "e2ab04c9-0fe1-4871-9388-ea25fa28b49c",
+                "name": "dining",
+                "type": "Kitchen",
+                "floor": "f_ground",
+                "cost": 10.0,
+                "area": 160.0,
+                "flooring": "Carpet",
+                "wall_color": "#e675d1",
+                "windows": 0,
+                "x": 160.0,
+                "y": 400.0,
+                "width": 400.0,
+                "height": 160.0,
+                "furniture": {
+                    "aee901ab-e0e1-4259-a8ae-8fa3790aef53": {
+                        "id": "aee901ab-e0e1-4259-a8ae-8fa3790aef53",
+                        "name": "sink",
+                        "cost": 2.0,
+                        "position": "center",
+                        "model": "droplet",
+                        "x": 20,
+                        "y": 20,
+                        "attached_to": "floor"
+                    },
+                    "85ecd212-63fd-48b4-9690-c470678d0d08": {
+                        "id": "85ecd212-63fd-48b4-9690-c470678d0d08",
+                        "name": "stove",
+                        "cost": 2000000.0,
+                        "position": "wall",
+                        "model": "fire",
+                        "x": 20,
+                        "y": 20,
+                        "attached_to": "floor"
+                    },
+                    "60be3d0e-ef69-48a4-ae92-c7a50ac0209d": {
+                        "id": "60be3d0e-ef69-48a4-ae92-c7a50ac0209d",
+                        "name": "bed",
+                        "cost": 1000000.0,
+                        "position": "wall",
+                        "model": "moon",
+                        "x": 118.315,
+                        "y": 0,
+                        "attached_to": "wall-north"
+                    }
+                }
+            },
+            "83e212b3-42ad-42e7-b4a7-1c193a3fe857": {
+                "id": "83e212b3-42ad-42e7-b4a7-1c193a3fe857",
+                "name": "prayer room",
+                "type": "Library",
+                "floor": "f_rooftop",
+                "cost": 9999988799986.93,
+                "area": 160.0,
+                "flooring": "Wood",
+                "wall_color": "#9a07cf",
+                "windows": 39,
+                "x": 440.0,
+                "y": 220.0,
+                "width": 160.0,
+                "height": 400.0,
+                "furniture": {}
             }
         },
         "floors": [
