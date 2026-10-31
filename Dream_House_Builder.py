@@ -961,7 +961,7 @@ class IconButton(tk.Canvas):
 
 
 class Stepper(tk.Frame):
-    """[ - ]  18'  [ + ]  control used for room width / length."""
+    """[ - ]  18 ft  [ + ]  control used for room width / length."""
 
     def __init__(self, parent, value, lo, hi, command=None):
         super().__init__(parent, bg=parent.cget("bg"))
@@ -1015,12 +1015,16 @@ def bind_wheel(area, scroll):
 
 
 class ScrollFrame(tk.Frame):
-    """A frame whose content scrolls vertically with the mouse wheel."""
+    """A frame whose content scrolls vertically (mouse wheel or the slim scroll bar)."""
 
     def __init__(self, parent, bg):
         super().__init__(parent, bg=bg)
         self.canvas = tk.Canvas(self, bg=bg, highlightthickness=0, yscrollincrement=18)
-        self.canvas.pack(fill="both", expand=True)
+        self.bar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview,
+                                 style="Dark.Vertical.TScrollbar")
+        self.canvas.configure(yscrollcommand=self.bar.set)
+        self.bar.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
         self.inner = tk.Frame(self.canvas, bg=bg)
         self.win = self.canvas.create_window((0, 0), window=self.inner, anchor="nw")
         self.inner.bind("<Configure>", self._resize)
@@ -1034,12 +1038,14 @@ class ScrollFrame(tk.Frame):
         if self.inner.winfo_reqheight() > self.canvas.winfo_height():
             self.canvas.yview_scroll(step, "units")
 
-    def rebuild(self, build):
-        """Clears the content, calls build(inner_frame) and keeps the scroll position."""
+    def rebuild(self, build, container=None):
+        """Clears 'container' (default: the whole inner frame), calls build(container)
+        and keeps the scroll position."""
+        container = container or self.inner
         top = self.canvas.yview()[0]
-        for widget in self.inner.winfo_children():
+        for widget in container.winfo_children():
             widget.destroy()
-        build(self.inner)
+        build(container)
         self.update_idletasks()
         self._resize()
         self.canvas.yview_moveto(top)
@@ -1358,6 +1364,9 @@ class DreamHouseApp:
                         rowheight=30, borderwidth=0, font=F(10))
         style.configure("Treeview.Heading", background=PANEL3, foreground=TEXT, font=F(10, True), relief="flat")
         style.map("Treeview", background=[("selected", BLUE)])
+        style.configure("Dark.Vertical.TScrollbar", background=PANEL3, troughcolor=PANEL, bordercolor=PANEL,
+                        lightcolor=PANEL3, darkcolor=PANEL3, arrowcolor=TEXT, relief="flat")
+        style.map("Dark.Vertical.TScrollbar", background=[("active", LINE)])
         style.map("Treeview.Heading", background=[("active", PANEL3)])
 
     # -----------------------------------------------------------------
@@ -1415,32 +1424,33 @@ class DreamHouseApp:
             draw_icon(cv, icon, 12, 12, 16, colour)
             tk.Label(cell, text=text, bg=PANEL, fg=colour, font=F(10)).pack(side="left", padx=(4, 0), pady=6)
 
-    # ---- left sidebar: rooms + budget ----
+    # ---- left sidebar: rooms + budget (the whole column scrolls) ----
     def build_left(self, left):
-        tk.Label(left, text="ROOMS", bg=PANEL, fg=TEXT, font=F(14, True)).pack(side="top", anchor="w", padx=18, pady=(16, 6))
-        budget = tk.Frame(left, bg=PANEL)
-        budget.pack(side="bottom", fill="x", padx=18, pady=(0, 14))
-        tk.Label(budget, text="BUDGET", bg=PANEL, fg=TEXT, font=F(14, True)).pack(anchor="w", pady=(0, 2))
+        self.left_scroll = ScrollFrame(left, PANEL)
+        self.left_scroll.pack(fill="both", expand=True)
+        box = self.left_scroll.inner
+        tk.Label(box, text="ROOMS", bg=PANEL, fg=TEXT, font=F(14, True)).pack(anchor="w", padx=14, pady=(14, 6))
+        RoundButton(box, text="Add Room", icon="plus", bg=BLUE, width=200, command=self.add_room).pack(
+            anchor="w", padx=14)
+        RoundButton(box, text="Delete Room", icon="trash", bg=DARK_RED, fg="#FF9A91", width=200,
+                    command=self.delete_room).pack(anchor="w", padx=14, pady=(6, 8))
+        self.room_box = tk.Frame(box, bg=PANEL)
+        self.room_box.pack(fill="x", padx=8)
+        tk.Frame(box, bg=LINE, height=1).pack(fill="x", padx=14, pady=10)
+        tk.Label(box, text="BUDGET", bg=PANEL, fg=TEXT, font=F(14, True)).pack(anchor="w", padx=14, pady=(0, 2))
         self.stat = {}
         for key, colour in (("Total Budget", GREEN), ("Total Cost", GOLD), ("Remaining", CYAN)):
-            tk.Label(budget, text=key, bg=PANEL, fg=MUTED, font=F(10)).pack(anchor="w")
-            label = tk.Label(budget, text="", bg=PANEL, fg=colour, font=F(19, True))
-            label.pack(anchor="w", pady=(0, 3))
+            row = tk.Frame(box, bg=PANEL)
+            row.pack(fill="x", padx=14, pady=3)
+            tk.Label(row, text=key, bg=PANEL, fg=MUTED, font=F(10)).pack(side="left")
+            label = tk.Label(row, text="", bg=PANEL, fg=colour, font=F(13, True))
+            label.pack(side="right")
             self.stat[key] = label
-        self.bar = tk.Canvas(budget, height=10, bg=PANEL, highlightthickness=0)
-        self.bar.pack(fill="x", pady=(4, 4))
+        self.bar = tk.Canvas(box, height=10, bg=PANEL, highlightthickness=0)
+        self.bar.pack(fill="x", padx=14, pady=(6, 4))
         self.bar.bind("<Configure>", lambda e: self.refresh_budget())
-        self.bar_note = tk.Label(budget, text="", bg=PANEL, fg=MUTED, font=F(9))
-        self.bar_note.pack(anchor="w")
-        tk.Frame(left, bg=LINE, height=1).pack(side="bottom", fill="x", padx=16, pady=8)
-        buttons = tk.Frame(left, bg=PANEL)
-        buttons.pack(side="bottom", fill="x", padx=14)
-        RoundButton(buttons, text="Delete Room", icon="trash", bg=DARK_RED, fg="#FF9A91", width=206,
-                    command=self.delete_room).pack(side="bottom", pady=(6, 0))
-        RoundButton(buttons, text="Add Room", icon="plus", bg=PANEL3, width=206,
-                    command=self.add_room).pack(side="bottom")
-        self.room_list = ScrollFrame(left, PANEL)
-        self.room_list.pack(fill="both", expand=True, padx=(12, 6), pady=(0, 6))
+        self.bar_note = tk.Label(box, text="", bg=PANEL, fg=MUTED, font=F(9))
+        self.bar_note.pack(anchor="w", padx=14, pady=(0, 16))
 
     # ---- centre: the floor plan canvas ----
     def build_plan(self, center):
@@ -1474,10 +1484,13 @@ class DreamHouseApp:
                               "\u2022   drag corner dot = resize", bg=CANVAS_BG, fg="#8896A5",
                  font=F(9)).place(relx=0, rely=1, x=14, y=-14, anchor="sw")
 
-    # ---- right: room details + furniture list ----
+    # ---- right: room details + furniture list (the whole column scrolls) ----
     def build_right(self, right):
-        card = tk.Frame(right, bg=PANEL, highlightbackground=LINE, highlightthickness=1)
-        card.pack(side="top", fill="x")
+        self.right_scroll = ScrollFrame(right, BG)
+        self.right_scroll.pack(fill="both", expand=True)
+        box = self.right_scroll.inner
+        card = tk.Frame(box, bg=PANEL, highlightbackground=LINE, highlightthickness=1)
+        card.pack(fill="x", padx=(0, 4))
         tk.Label(card, text="ROOM DETAILS", bg=PANEL, fg=TEXT, font=F(14, True)).pack(anchor="w", padx=16, pady=(14, 8))
         form = tk.Frame(card, bg=PANEL)
         form.pack(fill="x", padx=16, pady=(0, 14))
@@ -1507,21 +1520,21 @@ class DreamHouseApp:
         self.cost_label = tk.Label(form, text="", bg=PANEL, fg=GREEN, font=F(14, True))
         self.cost_label.grid(row=5, column=1, sticky="e", pady=5)
 
-        card2 = tk.Frame(right, bg=PANEL, highlightbackground=LINE, highlightthickness=1)
-        card2.pack(side="top", fill="both", expand=True, pady=(10, 0))
+        card2 = tk.Frame(box, bg=PANEL, highlightbackground=LINE, highlightthickness=1)
+        card2.pack(fill="x", padx=(0, 4), pady=(10, 10))
         tk.Label(card2, text="FURNITURE IN ROOM", bg=PANEL, fg=TEXT, font=F(14, True)).pack(
-            side="top", anchor="w", padx=16, pady=(14, 6))
-        foot = tk.Frame(card2, bg=PANEL)
-        foot.pack(side="bottom", fill="x", padx=14, pady=(4, 12))
-        total_row = tk.Frame(foot, bg=PANEL)
-        total_row.pack(fill="x", pady=(0, 8))
+            anchor="w", padx=16, pady=(14, 6))
+        self.furn_box = tk.Frame(card2, bg=PANEL)
+        self.furn_box.pack(fill="x", padx=10)
+        total_row = tk.Frame(card2, bg=PANEL)
+        total_row.pack(fill="x", padx=16, pady=(8, 6))
         tk.Label(total_row, text="Total", bg=PANEL, fg=TEXT, font=F(12, True)).pack(side="left")
         self.furn_total = tk.Label(total_row, text="", bg=PANEL, fg=GREEN, font=F(15, True))
         self.furn_total.pack(side="right")
-        RoundButton(foot, text="Rotate", icon="rotate", bg=PANEL3, width=134, command=self.rotate_selected).pack(side="left")
-        RoundButton(foot, text="Duplicate", icon="copy", bg=PANEL3, width=134, command=self.duplicate_selected).pack(side="right")
-        self.furn_list = ScrollFrame(card2, PANEL)
-        self.furn_list.pack(fill="both", expand=True, padx=(10, 6))
+        foot = tk.Frame(card2, bg=PANEL)
+        foot.pack(fill="x", padx=14, pady=(0, 14))
+        RoundButton(foot, text="Rotate", icon="rotate", bg=PANEL3, width=120, command=self.rotate_selected).pack(side="left")
+        RoundButton(foot, text="Duplicate", icon="copy", bg=PANEL3, width=120, command=self.duplicate_selected).pack(side="right")
 
     # ---- bottom: furniture catalogue ----
     def build_catalog(self):
@@ -1738,7 +1751,7 @@ class DreamHouseApp:
         def build(parent):
             for room in self.rooms:
                 self.make_room_row(parent, room)
-        self.room_list.rebuild(build)
+        self.left_scroll.rebuild(build, self.room_box)
 
     def make_room_row(self, parent, room):
         active = room is self.sel_room
@@ -1816,7 +1829,7 @@ class DreamHouseApp:
                 price.pack(side="right", padx=6)
                 for widget in (row, name, price):
                     widget.bind("<Button-1>", lambda e, i=item: self.select_item(i))
-        self.furn_list.rebuild(build)
+        self.right_scroll.rebuild(build, self.furn_box)
         self.furn_total.config(text=money(room.furniture_total()) if room else money(0))
 
     def total_cost(self):
