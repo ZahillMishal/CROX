@@ -212,10 +212,11 @@ def rects_overlap(ax, ay, aw, ah, bx, by, bw, bh):
 class Item:
     """One piece of furniture placed inside a room.
     x, y  = centre of the item in feet, measured from the room's top-left corner
-    rot   = number of clockwise quarter turns (0, 1, 2, 3)  ->  0, 90, 180, 270 degrees"""
+    rot   = number of clockwise quarter turns (0, 1, 2, 3)  ->  0, 90, 180, 270 degrees
+    iw, ih = size in feet when not turned (starts as the catalogue size, can be resized)"""
     _count = 0
 
-    def __init__(self, kind, x=0.0, y=0.0, rot=0, name=None, price=None, color=None):
+    def __init__(self, kind, x=0.0, y=0.0, rot=0, name=None, price=None, color=None, iw=None, ih=None):
         Item._count += 1
         self.uid = Item._count
         self.kind = kind if kind in CATALOG else "Center Table"
@@ -224,16 +225,15 @@ class Item:
         self.price = spec["price"] if price is None else int(price)
         self.color = color if is_hex(color) else spec["color"]
         self.x, self.y, self.rot = x, y, rot % 4
+        self.iw, self.ih = iw or spec["w"], ih or spec["h"]
 
     @property
     def w(self):          # width on the plan (swaps when turned sideways)
-        spec = CATALOG[self.kind]
-        return spec["w"] if self.rot % 2 == 0 else spec["h"]
+        return self.iw if self.rot % 2 == 0 else self.ih
 
     @property
     def h(self):
-        spec = CATALOG[self.kind]
-        return spec["h"] if self.rot % 2 == 0 else spec["w"]
+        return self.ih if self.rot % 2 == 0 else self.iw
 
     def clamp_into(self, room):
         """Keeps the item inside the room walls."""
@@ -263,6 +263,7 @@ class Room:
         self.floor = floor if floor in FLOORS else info["floor"]
         self.wall = wall if is_hex(wall) else info["wall"]
         self.items = []
+        self.doors = [[2, max(1.0, self.w * .16) + 1.5 if self.uid % 2 == 0 else self.w - max(1.0, self.w * .16) - 1.5]]
         self.cost = 0
         if cost is None:
             self.recalc_cost()
@@ -297,6 +298,14 @@ class Room:
     def contains(self, fx, fy):
         return self.x <= fx <= self.x + self.w and self.y <= fy <= self.y + self.h
 
+    def doors_at(self):
+        """Doors as (wall, centre) - wall 0 top, 1 right, 2 bottom, 3 left; centre in feet along that wall."""
+        return [(side, min(max(pos, 2), (self.w if side % 2 == 0 else self.h) - 2)) for side, pos in self.doors]
+
+    def door_xy(self, side, p):
+        return ((self.x + p, self.y), (self.x + self.w, self.y + p),
+                (self.x + p, self.y + self.h), (self.x, self.y + p))[side]
+
 
 # =====================================================================
 # 4. DATABASE CLASS  (all MySQL code is here)
@@ -321,6 +330,7 @@ SCHEMA = [
         base_cost   BIGINT NOT NULL DEFAULT 0,
         pos_x       INT NOT NULL DEFAULT 0,
         pos_y       INT NOT NULL DEFAULT 0,
+        doors       VARCHAR(200) DEFAULT NULL,
         FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
     )""",
     """CREATE TABLE IF NOT EXISTS furniture (
@@ -333,6 +343,8 @@ SCHEMA = [
         pos_y        INT DEFAULT 0,
         rotation     INT DEFAULT 0,
         color        VARCHAR(10) DEFAULT NULL,
+        size_w       INT DEFAULT NULL,
+        size_h       INT DEFAULT NULL,
         FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE
     )""",
 ]
@@ -343,11 +355,14 @@ UPGRADES = [
     ("rooms", "room_type", "VARCHAR(30) NOT NULL DEFAULT 'Living Room'"),
     ("rooms", "pos_x", "INT NOT NULL DEFAULT 0"),
     ("rooms", "pos_y", "INT NOT NULL DEFAULT 0"),
+    ("rooms", "doors", "VARCHAR(200) DEFAULT NULL"),
     ("furniture", "pos_x", "INT DEFAULT 0"),
     ("furniture", "pos_y", "INT DEFAULT 0"),
     ("furniture", "rotation", "INT DEFAULT 0"),
     ("furniture", "item_type", "VARCHAR(40) NOT NULL DEFAULT ''"),
     ("furniture", "color", "VARCHAR(10) DEFAULT NULL"),
+    ("furniture", "size_w", "INT DEFAULT NULL"),
+    ("furniture", "size_h", "INT DEFAULT NULL"),
 ]
 
 
@@ -421,19 +436,21 @@ class Database:
                             "VALUES (%s, %s, %s)", (name, budget, LAYOUT_VERSION))
                 project_id = cur.lastrowid
             for room in rooms:
+                doors = ",".join("%d:%d" % (sd, round(p * 10)) for sd, p in room.doors_at())   # "2:55,0:80"
                 cur.execute(
                     "INSERT INTO rooms (project_id, room_name, room_type, width_ft, length_ft, "
-                    "floor_type, wall_color, base_cost, pos_x, pos_y) "
-                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    "floor_type, wall_color, base_cost, pos_x, pos_y, doors) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                     (project_id, room.name, room.type, room.w, room.h, room.floor,
-                     room.wall, room.cost, room.x, room.y))
+                     room.wall, room.cost, room.x, room.y, doors))
                 room_id = cur.lastrowid
                 rows = [(room_id, i.name, i.kind, i.price, int(round(i.x * 10)),
-                         int(round(i.y * 10)), i.rot * 90, i.color) for i in room.items]
+                         int(round(i.y * 10)), i.rot * 90, i.color, int(round(i.iw * 10)),
+                         int(round(i.ih * 10))) for i in room.items]
                 if rows:
                     cur.executemany(
                         "INSERT INTO furniture (room_id, item_name, item_type, price, pos_x, "
-                        "pos_y, rotation, color) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)", rows)
+                        "pos_y, rotation, color, size_w, size_h) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", rows)
             self.conn.commit()
             return project_id
         except mysql.connector.Error:
@@ -455,18 +472,20 @@ class Database:
         project = {"id": project_id, "name": head[0], "budget": head[1],
                    "version": head[2], "rooms": []}
         cur.execute("SELECT room_id, room_name, room_type, width_ft, length_ft, floor_type, "
-                    "wall_color, base_cost, pos_x, pos_y FROM rooms "
+                    "wall_color, base_cost, pos_x, pos_y, doors FROM rooms "
                     "WHERE project_id=%s ORDER BY room_id", (project_id,))
         for r in cur.fetchall():
             project["rooms"].append({"db_id": r[0], "name": r[1], "type": r[2], "w": r[3], "h": r[4],
                                      "floor": r[5], "wall": r[6], "cost": r[7],
-                                     "x": r[8], "y": r[9], "items": []})
+                                     "x": r[8], "y": r[9], "items": [],
+                                     "doors": r[10]})
         for room in project["rooms"]:
-            cur.execute("SELECT item_name, item_type, price, pos_x, pos_y, rotation, color "
+            cur.execute("SELECT item_name, item_type, price, pos_x, pos_y, rotation, color, size_w, size_h "
                         "FROM furniture WHERE room_id=%s ORDER BY furniture_id", (room["db_id"],))
             for f in cur.fetchall():
                 room["items"].append({"name": f[0], "type": f[1], "price": f[2],
-                                      "x": f[3] or 0, "y": f[4] or 0, "rot": f[5] or 0, "color": f[6]})
+                                      "x": f[3] or 0, "y": f[4] or 0, "rot": f[5] or 0, "color": f[6],
+                                      "w": f[7], "h": f[8]})
         cur.close()
         return project
 
@@ -1277,7 +1296,9 @@ def settings_dialog(app):
                        highlightthickness=0, anchor="w").pack(fill="x", pady=2)
     tips = ("Drag furniture to move it  \u2022  Right-click (or R) to rotate\n"
             "Delete key removes it  \u2022  Arrow keys nudge it  \u2022  Ctrl+D duplicates\n"
-            "Drag an empty floor area to move a room  \u2022  Drag the round corner handle to resize\n"
+            "Drag an empty floor area to move a room  \u2022  Right-click it (or R) to rotate the room\n"
+            "Drag the round corner handle to resize a room or the selected furniture\n"
+            "Drag a door along any wall to move it  \u2022  Double-click a wall to add a door, a door to remove it\n"
             "Mouse wheel zooms  \u2022  Drag the background to pan  \u2022  Ctrl+S saves")
     tk.Label(d.body, text=tips, bg=PANEL, fg=MUTED, font=F(9), justify="left").pack(anchor="w", pady=(14, 0))
 
@@ -1480,9 +1501,6 @@ class DreamHouseApp:
                     command=lambda: self.zoom_center(1.2)).pack(side="left", padx=3)
         RoundButton(controls, text="Fit", icon="fit", height=38, bg=PANEL3, command=self.fit_view).pack(
             side="left", padx=3)
-        tk.Label(center, text="Wheel = zoom   \u2022   drag background = pan   \u2022   drag floor = move room   "
-                              "\u2022   drag corner dot = resize", bg=CANVAS_BG, fg="#8896A5",
-                 font=F(9)).place(relx=0, rely=1, x=14, y=-14, anchor="sw")
 
     # ---- right: room details + furniture list (the whole column scrolls) ----
     def build_right(self, right):
@@ -1519,6 +1537,8 @@ class DreamHouseApp:
         self.swatch.bind("<Button-1>", lambda e: self.pick_wall_colour())
         self.cost_label = tk.Label(form, text="", bg=PANEL, fg=GREEN, font=F(14, True))
         self.cost_label.grid(row=5, column=1, sticky="e", pady=5)
+        RoundButton(form, text="Rotate Room", icon="rotate", bg=PANEL3, command=self.rotate_room).grid(
+            row=6, column=0, columnspan=2, sticky="w", pady=(8, 0))
 
         card2 = tk.Frame(box, bg=PANEL, highlightbackground=LINE, highlightthickness=1)
         card2.pack(fill="x", padx=(0, 4), pady=(10, 10))
@@ -1541,8 +1561,14 @@ class DreamHouseApp:
         cat = tk.Frame(self.root, bg=PANEL, height=214, highlightbackground=LINE, highlightthickness=1)
         cat.pack(side="bottom", fill="x", padx=10, pady=(0, 6))
         cat.pack_propagate(False)
+        grip = tk.Canvas(cat, height=8, bg=PANEL, highlightthickness=0, cursor="sb_v_double_arrow")
+        grip.pack(fill="x")
+        grip.bind("<Configure>", lambda e: (grip.delete("all"), grip.create_line(
+            e.width / 2 - 22, 4, e.width / 2 + 22, 4, fill=LINE, width=3, capstyle="round")))
+        grip.bind("<B1-Motion>", lambda e: cat.configure(height=max(120, min(
+            self.root.winfo_height() - 380, cat.winfo_rooty() + cat.winfo_height() - e.y_root))))
         head = tk.Frame(cat, bg=PANEL)
-        head.pack(fill="x", padx=16, pady=(10, 4))
+        head.pack(fill="x", padx=16, pady=(2, 4))
         tk.Label(head, text="FURNITURE CATALOG", bg=PANEL, fg=TEXT, font=F(14, True)).pack(side="left", padx=(0, 14))
         self.tab_buttons = {}
         for name in CATEGORIES:
@@ -1566,6 +1592,8 @@ class DreamHouseApp:
         IconButton(row, "right", MUTED, lambda: self.cat_canvas.xview_scroll(3, "units"), size=30).pack(side="right")
         self.cat_canvas = tk.Canvas(row, bg=PANEL, highlightthickness=0, xscrollincrement=40)
         self.cat_canvas.pack(side="left", fill="both", expand=True)
+        self.cat_rows = 1
+        self.cat_canvas.bind("<Configure>", lambda e: self.refresh_catalog() if max(1, e.height // 150) != self.cat_rows else None)
         self.cat_inner = tk.Frame(self.cat_canvas, bg=PANEL)
         self.cat_canvas.create_window((0, 0), window=self.cat_inner, anchor="nw")
         self.cat_inner.bind("<Configure>", lambda e: self.cat_canvas.configure(scrollregion=self.cat_canvas.bbox("all")))
@@ -1617,7 +1645,7 @@ class DreamHouseApp:
         return (sx - self.ox) / self.zoom, (sy - self.oy) / self.zoom
 
     def wall_px(self):
-        return max(6.0, 0.6 * self.zoom)
+        return max(min(6.0, self.zoom), 0.6 * self.zoom)
 
     def fit_view(self):
         """Zoom and pan so that the whole house is visible."""
@@ -1633,14 +1661,14 @@ class DreamHouseApp:
         y1 = min(r.y for r in self.rooms) - 2
         x2 = max(r.x + r.w for r in self.rooms) + 2
         y2 = max(r.y + r.h for r in self.rooms) + 2
-        self.zoom = max(8.0, min(40.0, cw / (x2 - x1), ch / (y2 - y1)))
+        self.zoom = max(2.0, min(40.0, cw / (x2 - x1), ch / (y2 - y1)))
         self.ox = (cw - (x2 - x1) * self.zoom) / 2 - x1 * self.zoom
         self.oy = (ch - (y2 - y1) * self.zoom) / 2 - y1 * self.zoom
         self.draw_plan()
 
     def zoom_at(self, factor, sx, sy):
         mx, my = self.to_model(sx, sy)
-        self.zoom = max(8.0, min(45.0, self.zoom * factor))
+        self.zoom = max(2.0, min(45.0, self.zoom * factor))
         self.ox, self.oy = sx - mx * self.zoom, sy - my * self.zoom
         self.draw_plan()
 
@@ -2044,13 +2072,35 @@ class DreamHouseApp:
         else:
             self.rotate_item(self.sel_item)
 
+    def rotate_room(self, room=None):
+        """Turns a whole room a quarter turn clockwise (width and length swap, furniture turns with it)."""
+        room = room or self.sel_room
+        if room is None:
+            return
+        w, h = room.h, room.w
+        for x, y in ((room.x + (room.w - w) // 2, room.y + (room.h - h) // 2), (room.x, room.y)):
+            if not self.collides(room, x, y, w, h):
+                break
+        else:
+            self.toast("Another room is in the way", "warn")
+            return
+        old_h = room.h
+        room.doors = [[(sd + 1) % 4, old_h - p if sd % 2 else p] for sd, p in room.doors_at()]
+        room.x, room.y, room.w, room.h = x, y, w, h
+        for it in room.items:
+            it.x, it.y, it.rot = old_h - it.y, it.x, (it.rot + 1) % 4
+            it.clamp_into(room)
+        self.sel_room = room
+        self.mark_dirty()
+        self.refresh_all()
+
     def duplicate_selected(self):
         item = self.sel_item
         room = self.room_of(item) if item else None
         if room is None:
             self.toast("Select a furniture item first", "warn")
             return
-        copy = Item(item.kind, item.x + 1, item.y + 1, item.rot, item.name, item.price, item.color)
+        copy = Item(item.kind, item.x + 1, item.y + 1, item.rot, item.name, item.price, item.color, item.iw, item.ih)
         copy.clamp_into(room)
         room.items.append(copy)
         self.sel_item = copy
@@ -2072,8 +2122,9 @@ class DreamHouseApp:
         query = self.search_var.get().strip().lower()
         shown = [k for k, s in CATALOG.items()
                  if (self.category == "All" or s["cat"] == self.category) and query in k.lower()]
-        for kind in shown:
-            self.make_card(kind).pack(side="left", padx=5, pady=2)
+        self.cat_rows = max(1, self.cat_canvas.winfo_height() // 150)
+        for i, kind in enumerate(shown):
+            self.make_card(kind).grid(row=i % self.cat_rows, column=i // self.cat_rows, padx=5, pady=2)
         if not shown:
             tk.Label(self.cat_inner, text="No furniture found.", bg=PANEL, fg=MUTED, font=F(11)).pack(padx=20, pady=40)
         self.cat_canvas.xview_moveto(0)
@@ -2153,7 +2204,7 @@ class DreamHouseApp:
 
     def draw_grid(self, cw, ch):
         c, z = self.plan, self.zoom
-        step = 1 if z >= 14 else 2
+        step = 1 if z >= 14 else 2 if z >= 6 else 5
         for k in range(int(math.floor(-self.ox / z)), int(math.ceil((cw - self.ox) / z)) + 1):
             if k % step == 0:
                 x = self.ox + k * z
@@ -2230,7 +2281,7 @@ class DreamHouseApp:
         x1, y1 = self.to_screen(room.x, room.y)
         x2, y2 = self.to_screen(room.x + room.w, room.y + room.h)
         tags = ("room", "g%d" % room.uid)
-        if room.type != "Balcony" and not self.room_above(room):
+        if room.type != "Balcony" and not self.room_above(room) and all(sd != 0 for sd, _ in room.doors_at()):
             count = 2 if room.w >= 12 else 1
             length = min(5.0, room.w * 0.28) * z
             for k in range(count):
@@ -2241,19 +2292,21 @@ class DreamHouseApp:
                 c.create_line(cx - length / 2 + 3, y1, cx + length / 2 - 3, y1, fill="#6FC3E8",
                               width=max(2, T / 4), tags=tags)
                 c.create_line(cx, y1 - T / 2, cx, y1 + T / 2, fill=WALL_EDGE, tags=tags)
-        if room.w >= 6:
-            dw = 3 * z
-            left_hinge = room.uid % 2 == 0
-            xa = x1 + max(1.0, room.w * 0.16) * z if left_hinge else x2 - max(1.0, room.w * 0.16) * z - dw
-            xb = xa + dw
-            c.create_rectangle(xa, y2 - T / 2 - 1, xb, y2 + T / 2 + 1, fill=FLOORS[room.floor]["base"],
-                               outline="", tags=tags)
-            for x in (xa, xb):
-                c.create_line(x, y2 - T / 2, x, y2 + T / 2, fill=WALL_EDGE, width=2, tags=tags)
-            hinge = xa if left_hinge else xb
-            c.create_line(hinge, y2, hinge, y2 - dw, fill="#6B4A32", width=3, tags=tags)
-            c.create_arc(hinge - dw, y2 - dw, hinge + dw, y2 + dw, start=0 if left_hinge else 90, extent=90,
-                         style="arc", outline="#7B8794", dash=(4, 3), tags=tags)
+        for i, (side, p) in enumerate(room.doors_at()):
+            ox, oy, ux, uy, nx, ny = ((x1, y1, 1, 0, 0, 1), (x2, y1, 0, 1, -1, 0),
+                                      (x1, y2, 1, 0, 0, -1), (x1, y1, 0, 1, 1, 0))[side]
+            P = lambda a, t: (ox + ux * a + nx * t, oy + uy * a + ny * t)    # (along wall, into room) -> screen
+            a0, a1 = (p - 1.5) * z, (p + 1.5) * z
+            c.create_polygon(*P(a0, -T / 2 - 1), *P(a1, -T / 2 - 1), *P(a1, T / 2 + 1), *P(a0, T / 2 + 1),
+                             fill=FLOORS[room.floor]["base"], outline="", tags=tags)
+            for a in (a0, a1):
+                c.create_line(*P(a, -T / 2), *P(a, T / 2), fill=WALL_EDGE, width=2, tags=tags)
+            left = (room.uid + i) % 2 == 0
+            hinge, sgn, dw = (a0 if left else a1), (1 if left else -1), 3 * z
+            c.create_line(*P(hinge, 0), *P(hinge, dw), fill="#6B4A32", width=3, tags=tags)
+            arc = [P(hinge + sgn * dw * math.cos(math.radians(k)), dw * math.sin(math.radians(k)))
+                   for k in range(0, 91, 10)]
+            c.create_line(*[v for pt in arc for v in pt], fill="#7B8794", dash=(4, 3), tags=tags)
 
     def draw_label(self, room):
         c, z = self.plan, self.zoom
@@ -2272,7 +2325,7 @@ class DreamHouseApp:
         c, z = self.plan, self.zoom
         spec = CATALOG[item.kind]
         cx, cy = self.to_screen(room.x + item.x, room.y + item.y)
-        w, h = spec["w"] * z, spec["h"] * z
+        w, h = item.iw * z, item.ih * z
         tags = ("item", "g%d" % room.uid, "i%d" % item.uid)
         painter = Painter(c, cx, cy, item.rot, tags, unit=z / 20)
         painter.shadow(w, h, shade(FLOORS[room.floor]["base"], -.28), oval=spec["art"] in OVAL_ART)
@@ -2286,8 +2339,17 @@ class DreamHouseApp:
         back = round_rect(c, bb[0] - 9, bb[1] - 4, bb[2] + 9, bb[3] + 4, 10, fill=bg, outline="", tags=tags)
         c.tag_lower(back, tid)
 
-    def handle_pos(self, room):
-        return self.to_screen(room.x + room.w, room.y + room.h)
+    def handle_at(self, sx, sy):
+        """'item' / 'room' if (sx, sy) is on the resize dot of the selected item / room, else None."""
+        room, item, z = self.sel_room, self.sel_item, self.zoom
+        if room is None:
+            return None
+        if item is not None and item in room.items:
+            cx, cy = self.to_screen(room.x + item.x, room.y + item.y)
+            if (sx - cx - item.w * z / 2 - 4) ** 2 + (sy - cy - item.h * z / 2 - 4) ** 2 <= 10 ** 2:
+                return "item"
+        hx, hy = self.to_screen(room.x + room.w, room.y + room.h)
+        return "room" if (sx - hx) ** 2 + (sy - hy) ** 2 <= 14 ** 2 else None
 
     def draw_selection(self):
         c, z = self.plan, self.zoom
@@ -2308,7 +2370,11 @@ class DreamHouseApp:
             hw, hh = item.w * z / 2 + 4, item.h * z / 2 + 4
             itags = ("overlay", "g%d" % room.uid, "i%d" % item.uid)
             c.create_rectangle(cx - hw, cy - hh, cx + hw, cy + hh, outline="#FF9F1C", width=2, dash=(5, 3), tags=itags)
+            c.create_oval(cx + hw - 6, cy + hh - 6, cx + hw + 6, cy + hh + 6, fill="#FF9F1C", outline="#FFFFFF",
+                          width=2, tags=itags)
             self.pill(cx, cy - hh - 14, item.name, "#FF9F1C", "#2A1B00", itags, anchor="center")
+            self.pill(cx + hw + 10, cy + hh + 10, "%.1f' x %.1f'" % (item.w, item.h), "#FF9F1C", "#2A1B00",
+                      itags, anchor="nw")
 
     # -----------------------------------------------------------------
     # mouse interaction on the plan
@@ -2330,17 +2396,30 @@ class DreamHouseApp:
                 return room
         return None
 
-    def on_handle(self, sx, sy):
-        if self.sel_room is None:
-            return False
-        hx, hy = self.handle_pos(self.sel_room)
-        return (sx - hx) ** 2 + (sy - hy) ** 2 <= 14 ** 2
+    def find_door(self, mx, my):
+        """(room, index) of the door under the point, or None."""
+        for room in reversed(self.rooms):
+            for i, (sd, p) in enumerate(room.doors_at()):
+                dx, dy = room.door_xy(sd, p)
+                ax, ay = (1.5, WALL_FT + .1) if sd % 2 == 0 else (WALL_FT + .1, 1.5)
+                if abs(mx - dx) <= ax and abs(my - dy) <= ay:
+                    return room, i
+        return None
+
+    def wall_pos(self, room, mx, my):
+        """Nearest wall of the room to the point: (wall, door centre along it, distance from the wall)."""
+        dx, dy = mx - room.x, my - room.y
+        gaps = (dy, dx - room.w, dy - room.h, dx)
+        side = min(range(4), key=lambda k: abs(gaps[k]))
+        pos = (dx, dy, dx, dy)[side]
+        pos = round(pos * 2) / 2 if self.snap else round(pos, 1)
+        return side, min(max(pos, 2), (room.w if side % 2 == 0 else room.h) - 2), abs(gaps[side])
 
     def on_motion(self, event):
         mx, my = self.to_model(event.x, event.y)
-        if self.on_handle(event.x, event.y):
+        if self.handle_at(event.x, event.y):
             cursor = "sizing"
-        elif self.find_item(mx, my):
+        elif self.find_door(mx, my) or self.find_item(mx, my):
             cursor = "hand2"
         elif self.find_room(mx, my):
             cursor = "fleur"
@@ -2355,8 +2434,20 @@ class DreamHouseApp:
         self.plan.focus_set()
         self.drag = None
         mx, my = self.to_model(event.x, event.y)
-        if self.on_handle(event.x, event.y):
+        grab = self.handle_at(event.x, event.y)
+        if grab == "item":
+            room, item = self.sel_room, self.sel_item
+            self.drag = {"mode": "iresize", "room": room, "item": item, "moved": False,
+                         "l": item.x - item.w / 2, "t": item.y - item.h / 2}
+            return
+        if grab == "room":
             self.drag = {"mode": "resize", "room": self.sel_room, "moved": False}
+            return
+        door = self.find_door(mx, my)
+        if door:
+            self.sel_room, self.sel_item = door[0], None
+            self.drag = {"mode": "door", "room": door[0], "idx": door[1], "moved": False}
+            self.refresh_all()
             return
         hit = self.find_item(mx, my)
         if hit:
@@ -2408,6 +2499,24 @@ class DreamHouseApp:
             if (nw, nh) != (room.w, room.h) and not self.collides(room, room.x, room.y, nw, nh):
                 self.apply_size(room, nw, nh)
                 d["moved"] = True
+        elif d["mode"] == "iresize":
+            room, item = d["room"], d["item"]
+            snap = lambda v: round(v * 2) / 2 if self.snap else round(v, 1)
+            sw = max(.5, min(snap(mx - room.x - d["l"]), room.w - WALL_FT - d["l"]))
+            sh = max(.5, min(snap(my - room.y - d["t"]), room.h - WALL_FT - d["t"]))
+            if (sw, sh) != (item.w, item.h):
+                item.iw, item.ih = (sw, sh) if item.rot % 2 == 0 else (sh, sw)
+                item.x, item.y = d["l"] + sw / 2, d["t"] + sh / 2
+                item.clamp_into(room)
+                self.draw_plan()
+                d["moved"] = True
+        elif d["mode"] == "door":
+            room = d["room"]
+            side, pos, _ = self.wall_pos(room, mx, my)
+            if [side, pos] != list(room.doors_at()[d["idx"]]):
+                room.doors[d["idx"]] = [side, pos]
+                self.draw_plan()
+                d["moved"] = True
         elif d["mode"] == "pan":
             dx, dy = event.x - d["x"], event.y - d["y"]
             self.plan.move("all", dx, dy)
@@ -2419,20 +2528,35 @@ class DreamHouseApp:
         d, self.drag = self.drag, None
         if not d:
             return
-        if d["mode"] in ("item", "room") and d["moved"]:
+        if d["mode"] in ("item", "room", "iresize", "door") and d["moved"]:
             self.mark_dirty()
         self.draw_plan()
 
     def on_right_click(self, event):
-        hit = self.find_item(*self.to_model(event.x, event.y))
+        mx, my = self.to_model(event.x, event.y)
+        hit, room = self.find_item(mx, my), self.find_room(mx, my)
         if hit:
             self.rotate_item(hit[1])
+        elif room:
+            self.rotate_room(room)
 
     def on_double(self, event):
         self.drag = None
-        hit = self.find_item(*self.to_model(event.x, event.y))
-        if hit:
+        mx, my = self.to_model(event.x, event.y)
+        door, hit = self.find_door(mx, my), self.find_item(mx, my)
+        wall = next((r for r in reversed(self.rooms) if -.6 <= mx - r.x <= r.w + .6 and -.6 <= my - r.y <= r.h + .6
+                     and self.wall_pos(r, mx, my)[2] <= WALL_FT + .3), None)
+        if door:                                       # double-click a door: remove it
+            del door[0].doors[door[1]]
+            self.mark_dirty()
+            self.draw_plan()
+        elif hit:
             self.edit_item(hit[1])
+        elif wall:                                     # double-click a wall: add a door there
+            wall.doors.append(list(self.wall_pos(wall, mx, my)[:2]))
+            self.sel_room = wall
+            self.mark_dirty()
+            self.draw_plan()
         elif self.sel_room is not None:
             self.name_entry.focus_set()
             self.name_entry.select_range(0, "end")
@@ -2474,8 +2598,12 @@ class DreamHouseApp:
             self.delete_item(self.sel_item)
 
     def key_rotate(self, event):
-        if not self.typing() and self.sel_item is not None:
+        if self.typing():
+            return
+        if self.sel_item is not None:
             self.rotate_item(self.sel_item)
+        else:
+            self.rotate_room()
 
     def key_nudge(self, dx, dy):
         item = self.sel_item
@@ -2539,6 +2667,7 @@ class DreamHouseApp:
         """Turns the dictionary returned by Database.load_project() into Room and Item objects."""
         version = data["version"]
         rooms = []
+        tenths = lambda v: v / 10.0 if v else None          # NULL = catalogue size
         for rd in data["rooms"]:
             rtype = rd["type"]
             if version < 2 and rd["name"] in ROOM_TYPES:      # old saves had no room_type column
@@ -2550,14 +2679,17 @@ class DreamHouseApp:
             else:                                              # old save: arrange rooms automatically
                 x, y = self.find_free_spot(w, h, rooms)
             room = Room(rtype, rd["name"], x, y, w, h, rd["floor"], rd["wall"], rd["cost"])
+            if rd["doors"] is not None:                        # NULL = old save: keep the default door
+                room.doors = [[int(a), int(b) / 10.0] for a, b in (t.split(":") for t in rd["doors"].split(",") if t)]
             for fd in rd["items"]:
                 kind = fd["type"] if fd["type"] in CATALOG else (fd["name"] if fd["name"] in CATALOG else "Center Table")
                 if version >= 2:
                     item = Item(kind, fd["x"] / 10.0, fd["y"] / 10.0, (fd["rot"] // 90) % 4,
-                                fd["name"], fd["price"], fd["color"])
+                                fd["name"], fd["price"], fd["color"], tenths(fd["w"]), tenths(fd["h"]))
                 else:                                          # old save: positions were in pixels
                     fx, fy = self.free_spot(room, kind)
-                    item = Item(kind, fx, fy, fd["rot"] % 4, fd["name"], fd["price"], fd["color"])
+                    item = Item(kind, fx, fy, fd["rot"] % 4, fd["name"], fd["price"], fd["color"],
+                                tenths(fd["w"]), tenths(fd["h"]))
                 item.clamp_into(room)
                 room.items.append(item)
             rooms.append(room)
