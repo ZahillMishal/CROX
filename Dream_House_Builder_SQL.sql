@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS rooms (
 
 -- Furniture inside rooms. pos_x / pos_y = centre of the item in TENTHS of a foot from the
 -- room's top-left corner. rotation = 0, 90, 180 or 270 degrees.
+-- size_w / size_h = resized width / length in TENTHS of a foot (NULL = default catalogue size).
 CREATE TABLE IF NOT EXISTS furniture (
     furniture_id INT AUTO_INCREMENT PRIMARY KEY,
     room_id      INT NOT NULL,
@@ -43,6 +44,8 @@ CREATE TABLE IF NOT EXISTS furniture (
     pos_y        INT DEFAULT 0,
     rotation     INT DEFAULT 0,
     color        VARCHAR(10) DEFAULT NULL,
+    size_w       INT DEFAULT NULL,
+    size_h       INT DEFAULT NULL,
     FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE
 );
 
@@ -60,5 +63,6 @@ SHOW TABLES;
 -- SELECT * FROM projects;
 -- SELECT r.room_name, f.item_name, f.price FROM rooms r JOIN furniture f ON f.room_id = r.room_id WHERE r.project_id = 1;
 -- SELECT r.room_name, SUM(f.price) AS furniture_cost FROM rooms r JOIN furniture f ON f.room_id = r.room_id GROUP BY r.room_name;
+-- ---- Existing furniture table without size columns? ALTER TABLE furniture ADD COLUMN size_w INT DEFAULT NULL, ADD COLUMN size_h INT DEFAULT NULL;
 -- ---- Upgrading an OLD database made with the first version? Just run the Python program once;
 -- ---- it adds the missing columns automatically.
