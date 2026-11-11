@@ -1,10 +1,3 @@
-"""
-=====================================================================
- DREAM HOUSE BUILDER
- An interactive 2D interior-design studio
- Python (Tkinter) + MySQL
-=====================================================================
- How this file is organised (useful for the viva):
 
    1. SETTINGS         - database login, colours, fonts
    2. DATA             - furniture catalogue, room types, floor types
